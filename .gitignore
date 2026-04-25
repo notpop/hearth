@@ -1,0 +1,36 @@
+# Build artifacts
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+
+# Go
+/.gopath/
+/vendor/
+coverage.out
+coverage.html
+
+# Nix / direnv
+/result
+/result-*
+.direnv/
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local data
+/.hearth/
+*.db
+*.db-shm
+*.db-wal
+
+# Local overrides
+.envrc.local

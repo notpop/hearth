@@ -1,0 +1,219 @@
+// Hearth wire protocol — v1
+//
+// All RPCs run over a single gRPC service. Worker, client, and admin calls
+// are mixed deliberately: every Hearth deployment runs exactly one
+// coordinator listening for all of them, and splitting services would only
+// add deployment complexity.
+syntax = "proto3";
+
+package hearth.v1;
+
+option go_package = "github.com/notpop/hearth/pkg/proto/hearth/v1;hearthv1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+service Coordinator {
+  // ---- Client API -------------------------------------------------------
+  rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse);
+  rpc GetJob(GetJobRequest) returns (Job);
+  rpc ListJobs(ListJobsRequest) returns (ListJobsResponse);
+  rpc CancelJob(CancelJobRequest) returns (CancelJobResponse);
+  // WatchJob streams updates for a single job until it reaches a terminal state.
+  rpc WatchJob(WatchJobRequest) returns (stream Job);
+
+  // ---- Worker API -------------------------------------------------------
+  rpc RegisterWorker(RegisterWorkerRequest) returns (RegisterWorkerResponse);
+  // LeaseJob is a long-poll: the server holds the call until a job is
+  // available for the worker's accepted kinds, or until poll_timeout elapses.
+  rpc LeaseJob(LeaseJobRequest) returns (LeaseJobResponse);
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+  rpc CompleteJob(CompleteJobRequest) returns (CompleteJobResponse);
+  rpc FailJob(FailJobRequest) returns (FailJobResponse);
+
+  // ---- Blob API ---------------------------------------------------------
+  // PutBlob streams bytes from the caller; first message must contain
+  // the size hint and total chunks, subsequent messages carry data.
+  rpc PutBlob(stream PutBlobRequest) returns (PutBlobResponse);
+  rpc GetBlob(GetBlobRequest) returns (stream GetBlobResponse);
+  rpc HasBlob(HasBlobRequest) returns (HasBlobResponse);
+
+  // ---- Admin ------------------------------------------------------------
+  rpc ListNodes(ListNodesRequest) returns (ListNodesResponse);
+}
+
+// ---- Domain messages ----------------------------------------------------
+
+enum State {
+  STATE_UNSPECIFIED = 0;
+  STATE_QUEUED = 1;
+  STATE_LEASED = 2;
+  STATE_SUCCEEDED = 3;
+  STATE_FAILED = 4;
+  STATE_CANCELLED = 5;
+}
+
+message BlobRef {
+  string sha256 = 1;
+  int64 size = 2;
+}
+
+message BackoffPolicy {
+  google.protobuf.Duration initial = 1;
+  google.protobuf.Duration max = 2;
+  double multiplier = 3;
+  double jitter = 4;
+}
+
+message Spec {
+  string kind = 1;
+  bytes payload = 2;
+  repeated BlobRef blobs = 3;
+  int32 max_attempts = 4;
+  google.protobuf.Duration lease_ttl = 5;
+  BackoffPolicy backoff = 6;
+}
+
+message Lease {
+  string worker_id = 1;
+  google.protobuf.Timestamp leased_at = 2;
+  google.protobuf.Timestamp expires_at = 3;
+}
+
+message Result {
+  bytes payload = 1;
+  repeated BlobRef blobs = 2;
+}
+
+message Job {
+  string id = 1;
+  Spec spec = 2;
+  State state = 3;
+  int32 attempt = 4;
+  Lease lease = 5;
+  Result result = 6;
+  string last_error = 7;
+  google.protobuf.Timestamp next_run_at = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+message WorkerInfo {
+  string id = 1;
+  string hostname = 2;
+  string os = 3;
+  string arch = 4;
+  repeated string kinds = 5;
+  string version = 6;
+  google.protobuf.Timestamp joined_at = 7;
+  google.protobuf.Timestamp last_seen = 8;
+}
+
+// ---- RPC messages -------------------------------------------------------
+
+message SubmitJobRequest {
+  Spec spec = 1;
+}
+message SubmitJobResponse {
+  string id = 1;
+}
+
+message GetJobRequest {
+  string id = 1;
+}
+
+message ListJobsRequest {
+  repeated State states = 1;
+  repeated string kinds = 2;
+  int32 limit = 3;
+}
+message ListJobsResponse {
+  repeated Job jobs = 1;
+}
+
+message CancelJobRequest {
+  string id = 1;
+}
+message CancelJobResponse {}
+
+message WatchJobRequest {
+  string id = 1;
+}
+
+message RegisterWorkerRequest {
+  WorkerInfo info = 1;
+}
+message RegisterWorkerResponse {
+  google.protobuf.Duration heartbeat_interval = 1;
+}
+
+message LeaseJobRequest {
+  string worker_id = 1;
+  repeated string kinds = 2;
+  google.protobuf.Duration poll_timeout = 3;
+  google.protobuf.Duration lease_ttl = 4;
+}
+message LeaseJobResponse {
+  // Empty job means "no work, try again". This keeps the wire shape simple.
+  Job job = 1;
+}
+
+message HeartbeatRequest {
+  string job_id = 1;
+  string worker_id = 2;
+}
+message HeartbeatResponse {
+  google.protobuf.Timestamp expires_at = 1;
+  // If true, the coordinator wants the worker to abandon the job (ctx cancel).
+  bool cancel = 2;
+}
+
+message CompleteJobRequest {
+  string job_id = 1;
+  string worker_id = 2;
+  Result result = 3;
+}
+message CompleteJobResponse {}
+
+message FailJobRequest {
+  string job_id = 1;
+  string worker_id = 2;
+  string error_message = 3;
+}
+message FailJobResponse {
+  bool will_retry = 1;
+  google.protobuf.Timestamp next_run_at = 2;
+}
+
+message PutBlobRequest {
+  oneof payload {
+    PutBlobHeader header = 1;
+    bytes chunk = 2;
+  }
+}
+message PutBlobHeader {
+  // Optional: hint for the total expected size (bytes).
+  int64 size = 1;
+}
+message PutBlobResponse {
+  BlobRef ref = 1;
+}
+
+message GetBlobRequest {
+  BlobRef ref = 1;
+}
+message GetBlobResponse {
+  bytes chunk = 1;
+}
+
+message HasBlobRequest {
+  BlobRef ref = 1;
+}
+message HasBlobResponse {
+  bool present = 1;
+}
+
+message ListNodesRequest {}
+message ListNodesResponse {
+  repeated WorkerInfo nodes = 1;
+}
