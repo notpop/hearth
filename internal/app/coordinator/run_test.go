@@ -136,14 +136,14 @@ func TestHeartbeatErrorsWhenNotLeased(t *testing.T) {
 	c := coordinator.New(coordinator.Options{Store: store})
 	id, _ := c.Submit(context.Background(), job.Spec{Kind: "k", MaxAttempts: 1, LeaseTTL: time.Second})
 
-	if _, _, err := c.Heartbeat(context.Background(), id, "w1"); err == nil {
+	if _, _, err := c.Heartbeat(context.Background(), id, "w1", nil); err == nil {
 		t.Errorf("expected error heartbeating queued job")
 	}
 }
 
 func TestHeartbeatErrorsForUnknownJob(t *testing.T) {
 	c := coordinator.New(coordinator.Options{Store: memstore.New()})
-	if _, _, err := c.Heartbeat(context.Background(), "missing", "w1"); err == nil {
+	if _, _, err := c.Heartbeat(context.Background(), "missing", "w1", nil); err == nil {
 		t.Errorf("expected error for missing job")
 	}
 }
@@ -159,7 +159,7 @@ func TestCancelRequestSignalsCancelOnHeartbeat(t *testing.T) {
 		t.Fatalf("Cancel: %v", err)
 	}
 
-	expires, cancelReq, err := c.Heartbeat(context.Background(), leased.ID, "w1")
+	expires, cancelReq, err := c.Heartbeat(context.Background(), leased.ID, "w1", nil)
 	if err != nil {
 		t.Fatalf("Heartbeat after cancel: %v", err)
 	}

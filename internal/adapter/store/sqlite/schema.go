@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS jobs (
   result_blobs_json   TEXT,
   last_error          TEXT,
   next_run_at_ns      INTEGER NOT NULL DEFAULT 0,
+  progress_percent    REAL,
+  progress_message    TEXT,
+  progress_reported_at_ns INTEGER,
   created_at_ns       INTEGER NOT NULL,
   updated_at_ns       INTEGER NOT NULL
 );

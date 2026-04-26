@@ -127,7 +127,7 @@ func testHeartbeat(t *testing.T, f Factory) {
 	leased, _, _ := s.LeaseNext(context.Background(), []string{"k"}, "w1", 30*time.Second, now)
 
 	newExpiry := now.Add(time.Minute)
-	if err := s.Heartbeat(context.Background(), leased.ID, "w1", newExpiry); err != nil {
+	if err := s.Heartbeat(context.Background(), leased.ID, "w1", newExpiry, nil); err != nil {
 		t.Fatalf("Heartbeat: %v", err)
 	}
 
@@ -137,7 +137,7 @@ func testHeartbeat(t *testing.T, f Factory) {
 	}
 
 	// Wrong worker rejected.
-	if err := s.Heartbeat(context.Background(), leased.ID, "imposter", newExpiry); !errors.Is(err, jobsm.ErrInvalidTransition) {
+	if err := s.Heartbeat(context.Background(), leased.ID, "imposter", newExpiry, nil); !errors.Is(err, jobsm.ErrInvalidTransition) {
 		t.Errorf("imposter heartbeat err = %v", err)
 	}
 }

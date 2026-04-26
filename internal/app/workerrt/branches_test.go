@@ -19,7 +19,7 @@ type stubClient struct {
 	mu sync.Mutex
 
 	leaseFn     func(ctx context.Context, kinds []string, workerID string, ttl, poll time.Duration) (job.Job, bool, error)
-	heartbeatFn func(ctx context.Context, id job.ID, workerID string) (time.Time, bool, error)
+	heartbeatFn func(ctx context.Context, id job.ID, workerID string, progress *job.Progress) (time.Time, bool, error)
 	completeFn  func(ctx context.Context, id job.ID, workerID string, res job.Result) error
 	failFn      func(ctx context.Context, id job.ID, workerID string, msg string) error
 	getBlobFn   func(ctx context.Context, ref job.BlobRef) (io.ReadCloser, error)
@@ -33,9 +33,9 @@ type stubClient struct {
 func (c *stubClient) Lease(ctx context.Context, kinds []string, workerID string, ttl, poll time.Duration) (job.Job, bool, error) {
 	return c.leaseFn(ctx, kinds, workerID, ttl, poll)
 }
-func (c *stubClient) Heartbeat(ctx context.Context, id job.ID, workerID string) (time.Time, bool, error) {
+func (c *stubClient) Heartbeat(ctx context.Context, id job.ID, workerID string, progress *job.Progress) (time.Time, bool, error) {
 	if c.heartbeatFn != nil {
-		return c.heartbeatFn(ctx, id, workerID)
+		return c.heartbeatFn(ctx, id, workerID, progress)
 	}
 	return time.Time{}, false, nil
 }
@@ -229,7 +229,7 @@ func TestRuntimeCancelsHandlerOnLeaseLoss(t *testing.T) {
 			State: job.StateLeased,
 		}, true, nil
 	}
-	c.heartbeatFn = func(_ context.Context, _ job.ID, _ string) (time.Time, bool, error) {
+	c.heartbeatFn = func(_ context.Context, _ job.ID, _ string, _ *job.Progress) (time.Time, bool, error) {
 		return time.Time{}, false, errors.New("lease lost")
 	}
 

@@ -215,6 +215,30 @@ func ResultFromProto(p *hearthv1.Result) *job.Result {
 	}
 }
 
+// --- Progress -----------------------------------------------------------
+
+func ProgressToProto(p *job.Progress) *hearthv1.Progress {
+	if p == nil {
+		return nil
+	}
+	return &hearthv1.Progress{
+		Percent:    p.Percent,
+		Message:    p.Message,
+		ReportedAt: tsToProto(p.ReportedAt),
+	}
+}
+
+func ProgressFromProto(p *hearthv1.Progress) *job.Progress {
+	if p == nil {
+		return nil
+	}
+	return &job.Progress{
+		Percent:    p.GetPercent(),
+		Message:    p.GetMessage(),
+		ReportedAt: tsFromProto(p.GetReportedAt()),
+	}
+}
+
 // --- Job ----------------------------------------------------------------
 
 func JobToProto(j job.Job) *hearthv1.Job {
@@ -225,6 +249,7 @@ func JobToProto(j job.Job) *hearthv1.Job {
 		Attempt:   int32(j.Attempt),
 		Lease:     LeaseToProto(j.Lease),
 		Result:    ResultToProto(j.Result),
+		Progress:  ProgressToProto(j.Progress),
 		LastError: j.LastError,
 		NextRunAt: tsToProto(j.NextRunAt),
 		CreatedAt: tsToProto(j.CreatedAt),
@@ -243,6 +268,7 @@ func JobFromProto(p *hearthv1.Job) job.Job {
 		Attempt:   int(p.GetAttempt()),
 		Lease:     LeaseFromProto(p.GetLease()),
 		Result:    ResultFromProto(p.GetResult()),
+		Progress:  ProgressFromProto(p.GetProgress()),
 		LastError: p.GetLastError(),
 		NextRunAt: tsFromProto(p.GetNextRunAt()),
 		CreatedAt: tsFromProto(p.GetCreatedAt()),

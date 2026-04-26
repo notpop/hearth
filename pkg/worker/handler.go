@@ -33,7 +33,20 @@ type Input struct {
 	Attempt int
 	Payload []byte
 	Blobs   []InputBlob
+
+	// Report publishes the handler's current progress to the
+	// coordinator; it is piggybacked on the next heartbeat so it does
+	// not generate per-call wire traffic. May be nil — treat as a no-op.
+	//
+	// Percent is clamped to [0, 1]. Message is free-form and may be
+	// empty. The latest call wins; older reports are overwritten by
+	// newer ones before transmission, so calling Report in a tight
+	// loop is safe.
+	Report ReportFunc
 }
+
+// ReportFunc is the signature of Input.Report.
+type ReportFunc func(percent float64, message string)
 
 // InputBlob exposes a blob attached to the job. Open is supplied by the
 // runtime; the worker is responsible for closing the returned reader.

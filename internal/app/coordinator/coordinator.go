@@ -12,7 +12,6 @@ import (
 	crand "crypto/rand"
 	"context"
 	"encoding/hex"
-	"errors"
 	"log/slog"
 	mrand "math/rand/v2"
 	"time"
@@ -100,17 +99,34 @@ func (c *Coordinator) publishCurrent(ctx context.Context, id job.ID) {
 	c.pub.Publish(j)
 }
 
+// DefaultMaxAttempts is applied when Spec.MaxAttempts is the zero value.
+const DefaultMaxAttempts = 3
+
+// DefaultLeaseTTL is applied when Spec.LeaseTTL is the zero value.
+const DefaultLeaseTTL = 30 * time.Second
+
+// DefaultBackoff is the policy used when Spec.Backoff is the zero value:
+// 1s initial, 60s max, ×2 multiplier, 10% symmetric jitter.
+var DefaultBackoff = job.BackoffPolicy{
+	Initial:    time.Second,
+	Max:        time.Minute,
+	Multiplier: 2,
+	Jitter:     0.1,
+}
+
 // Submit enqueues a fresh job described by spec and returns its id.
+//
+// Spec defaults applied here:
+//   - Kind: required (errors if empty)
+//   - MaxAttempts: 0 → DefaultMaxAttempts (3); negative → unbounded
+//   - LeaseTTL:    0 → DefaultLeaseTTL (30s)
+//   - Backoff:     zero value → DefaultBackoff; partial-zero gets per-field
+//                  fallbacks so accidental Multiplier=0 doesn't break math
 func (c *Coordinator) Submit(ctx context.Context, spec job.Spec) (job.ID, error) {
-	if spec.Kind == "" {
-		return "", errors.New("coordinator: spec.Kind is required")
+	if err := validateKind(spec.Kind); err != nil {
+		return "", err
 	}
-	if spec.MaxAttempts <= 0 {
-		spec.MaxAttempts = 1
-	}
-	if spec.LeaseTTL <= 0 {
-		spec.LeaseTTL = 30 * time.Second
-	}
+	spec = applySpecDefaults(spec)
 	now := c.clock.Now()
 	j := job.Job{
 		ID:        c.newID(),
@@ -167,11 +183,14 @@ func (c *Coordinator) Lease(ctx context.Context, kinds []string, workerID string
 
 // Heartbeat extends the lease on (id, workerID) using the spec's LeaseTTL.
 //
+// If progress is non-nil, the coordinator records it as the latest progress
+// snapshot and publishes the updated job to subscribers.
+//
 // If the job is in a terminal state — including Cancelled, which is the
 // signal a worker uses to abandon a leased job — Heartbeat returns
 // (zeroTime, true, nil). Workers should treat cancelRequested=true as
 // "stop running this job, the coordinator no longer wants the result."
-func (c *Coordinator) Heartbeat(ctx context.Context, id job.ID, workerID string) (expires time.Time, cancelRequested bool, err error) {
+func (c *Coordinator) Heartbeat(ctx context.Context, id job.ID, workerID string, progress *job.Progress) (expires time.Time, cancelRequested bool, err error) {
 	j, gerr := c.store.Get(ctx, id)
 	if gerr != nil {
 		return time.Time{}, false, gerr
@@ -183,8 +202,11 @@ func (c *Coordinator) Heartbeat(ctx context.Context, id job.ID, workerID string)
 		return time.Time{}, false, jobsm.ErrInvalidTransition
 	}
 	exp := c.clock.Now().Add(j.Spec.LeaseTTL)
-	if err := c.store.Heartbeat(ctx, id, workerID, exp); err != nil {
+	if err := c.store.Heartbeat(ctx, id, workerID, exp, progress); err != nil {
 		return time.Time{}, false, err
+	}
+	if progress != nil {
+		c.publishCurrent(ctx, id)
 	}
 	return exp, false, nil
 }

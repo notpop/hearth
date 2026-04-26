@@ -57,8 +57,8 @@ func TestSubmitAndGet(t *testing.T) {
 	if got.State != job.StateQueued {
 		t.Errorf("state = %v", got.State)
 	}
-	if got.Spec.MaxAttempts != 1 {
-		t.Errorf("max attempts default = %d, want 1", got.Spec.MaxAttempts)
+	if got.Spec.MaxAttempts != coordinator.DefaultMaxAttempts {
+		t.Errorf("max attempts default = %d, want %d", got.Spec.MaxAttempts, coordinator.DefaultMaxAttempts)
 	}
 }
 
@@ -91,7 +91,7 @@ func TestHeartbeatExtendsExpiry(t *testing.T) {
 	leased, _, _ := h.coord.Lease(context.Background(), []string{"k"}, "w1", 10*time.Second, 0)
 
 	h.clock.Advance(3 * time.Second)
-	expires, cancel, err := h.coord.Heartbeat(context.Background(), leased.ID, "w1")
+	expires, cancel, err := h.coord.Heartbeat(context.Background(), leased.ID, "w1", nil)
 	if err != nil {
 		t.Fatalf("Heartbeat: %v", err)
 	}

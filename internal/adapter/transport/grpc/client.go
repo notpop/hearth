@@ -71,8 +71,12 @@ func (c *Client) Lease(ctx context.Context, kinds []string, workerID string, ttl
 	return wire.JobFromProto(resp.GetJob()), true, nil
 }
 
-func (c *Client) Heartbeat(ctx context.Context, id job.ID, workerID string) (time.Time, bool, error) {
-	resp, err := c.rpc.Heartbeat(ctx, &hearthv1.HeartbeatRequest{JobId: string(id), WorkerId: workerID})
+func (c *Client) Heartbeat(ctx context.Context, id job.ID, workerID string, progress *job.Progress) (time.Time, bool, error) {
+	req := &hearthv1.HeartbeatRequest{JobId: string(id), WorkerId: workerID}
+	if progress != nil {
+		req.Progress = wire.ProgressToProto(progress)
+	}
+	resp, err := c.rpc.Heartbeat(ctx, req)
 	if err != nil {
 		return time.Time{}, false, err
 	}

@@ -45,10 +45,14 @@ The OSS `hearth worker` command can also load a bundle for connectivity testing,
 
 ## Building your own worker
 
-External projects depend on exactly two packages:
+> Full guide: [docs/USAGE.md](./docs/USAGE.md)
 
-- `github.com/notpop/hearth/pkg/worker` — the `Handler` interface
+External projects depend on exactly four packages:
+
+- `github.com/notpop/hearth/pkg/worker` — the `Handler` interface (worker side)
 - `github.com/notpop/hearth/pkg/runner` — `RunWorker` (or `Run` for more control)
+- `github.com/notpop/hearth/pkg/client` — programmatic submission (web app, bot, …)
+- `github.com/notpop/hearth/pkg/job`    — domain types shared by all of the above
 
 A complete worker is ~15 lines:
 

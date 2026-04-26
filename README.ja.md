@@ -45,10 +45,14 @@ OSS の `hearth worker` コマンドは bundle を読み込んで接続確認は
 
 ## 自分の worker をビルドする
 
-外部プロジェクトが依存する公開 API は次の2パッケージのみ:
+> 詳細: [docs/USAGE.ja.md](./docs/USAGE.ja.md)
 
-- `github.com/notpop/hearth/pkg/worker` — `Handler` interface
+外部プロジェクトが依存する公開 API は次の4パッケージのみ:
+
+- `github.com/notpop/hearth/pkg/worker` — `Handler` interface(worker 側)
 - `github.com/notpop/hearth/pkg/runner` — `RunWorker`(細かい制御は `Run` + `Options`)
+- `github.com/notpop/hearth/pkg/client` — プログラマブル投入(Web app, bot, ...)
+- `github.com/notpop/hearth/pkg/job`    — 上記すべてが共有するドメイン型
 
 最小実装は ~15 行:
 

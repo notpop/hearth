@@ -173,7 +173,9 @@ func (s *Server) LeaseJob(ctx context.Context, req *hearthv1.LeaseJobRequest) (*
 }
 
 func (s *Server) Heartbeat(ctx context.Context, req *hearthv1.HeartbeatRequest) (*hearthv1.HeartbeatResponse, error) {
-	expires, cancel, err := s.coord.Heartbeat(ctx, job.ID(req.GetJobId()), req.GetWorkerId())
+	expires, cancel, err := s.coord.Heartbeat(ctx,
+		job.ID(req.GetJobId()), req.GetWorkerId(),
+		wire.ProgressFromProto(req.GetProgress()))
 	if err != nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "%v", err)
 	}

@@ -23,7 +23,7 @@ import (
 // gRPC and in-process implementations both satisfy this.
 type CoordinatorClient interface {
 	Lease(ctx context.Context, kinds []string, workerID string, ttl, pollTimeout time.Duration) (job.Job, bool, error)
-	Heartbeat(ctx context.Context, jobID job.ID, workerID string) (expires time.Time, cancel bool, err error)
+	Heartbeat(ctx context.Context, jobID job.ID, workerID string, progress *job.Progress) (expires time.Time, cancel bool, err error)
 	Complete(ctx context.Context, jobID job.ID, workerID string, res job.Result) error
 	Fail(ctx context.Context, jobID job.ID, workerID string, errMsg string) error
 
@@ -73,6 +73,9 @@ func New(opt Options) *Runtime {
 	kinds := make([]string, 0, len(opt.Handlers))
 	for _, h := range opt.Handlers {
 		k := h.Kind()
+		if err := job.ValidateKind(k); err != nil {
+			panic("workerrt: " + err.Error())
+		}
 		if _, dup := handlers[k]; dup {
 			panic("workerrt: duplicate handler for kind " + k)
 		}
@@ -165,8 +168,10 @@ func (r *Runtime) runOne(parent context.Context, j job.Job) {
 	jobCtx, cancel := context.WithCancel(parent)
 	defer cancel()
 
+	tracker := newProgressTracker(r.clock)
+
 	hbDone := make(chan struct{})
-	go r.heartbeat(jobCtx, cancel, j.ID, hbDone)
+	go r.heartbeat(jobCtx, cancel, j.ID, tracker, hbDone)
 
 	in := worker.Input{
 		JobID:   j.ID,
@@ -174,6 +179,7 @@ func (r *Runtime) runOne(parent context.Context, j job.Job) {
 		Attempt: j.Attempt,
 		Payload: j.Spec.Payload,
 		Blobs:   r.makeInputBlobs(parent, j.Spec.Blobs),
+		Report:  tracker.report,
 	}
 
 	out, herr := h.Handle(jobCtx, in)
@@ -199,19 +205,28 @@ func (r *Runtime) runOne(parent context.Context, j job.Job) {
 	}
 }
 
-// heartbeat keeps the lease alive while the handler runs. If the
-// coordinator reports a lost lease or asks to cancel, it cancels jobCtx
-// so the handler can unwind.
-func (r *Runtime) heartbeat(ctx context.Context, cancel context.CancelFunc, id job.ID, done chan<- struct{}) {
+// heartbeat keeps the lease alive while the handler runs and piggybacks
+// any progress reported by the handler. If the coordinator reports a
+// lost lease or asks to cancel, it cancels jobCtx so the handler can
+// unwind.
+func (r *Runtime) heartbeat(ctx context.Context, cancel context.CancelFunc, id job.ID, tracker *progressTracker, done chan<- struct{}) {
 	defer close(done)
 	t := time.NewTicker(r.heartbeatPeriod)
 	defer t.Stop()
+	var lastSent *job.Progress
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			_, cancelReq, err := r.client.Heartbeat(ctx, id, r.workerID)
+			cur := tracker.snapshot()
+			toSend := cur
+			// Only send progress on the wire when it changed since last
+			// heartbeat to keep stream noise low.
+			if toSend != nil && lastSent != nil && progressEqual(*toSend, *lastSent) {
+				toSend = nil
+			}
+			_, cancelReq, err := r.client.Heartbeat(ctx, id, r.workerID, toSend)
 			if err != nil || cancelReq {
 				r.log.Warn("lease lost or cancellation requested",
 					"job", id, "err", err, "cancelRequested", cancelReq)
@@ -221,8 +236,15 @@ func (r *Runtime) heartbeat(ctx context.Context, cancel context.CancelFunc, id j
 				cancel()
 				return
 			}
+			if toSend != nil {
+				lastSent = toSend
+			}
 		}
 	}
+}
+
+func progressEqual(a, b job.Progress) bool {
+	return a.Percent == b.Percent && a.Message == b.Message
 }
 
 func (r *Runtime) makeInputBlobs(ctx context.Context, refs []job.BlobRef) []worker.InputBlob {

@@ -85,6 +85,15 @@ message Result {
   repeated BlobRef blobs = 2;
 }
 
+message Progress {
+  // percent is in [0, 1].
+  double percent = 1;
+  // message is a free-form human-readable description.
+  string message = 2;
+  // reported_at is the worker-side wall-clock time of the report.
+  google.protobuf.Timestamp reported_at = 3;
+}
+
 message Job {
   string id = 1;
   Spec spec = 2;
@@ -96,6 +105,7 @@ message Job {
   google.protobuf.Timestamp next_run_at = 8;
   google.protobuf.Timestamp created_at = 9;
   google.protobuf.Timestamp updated_at = 10;
+  Progress progress = 11;
 }
 
 message WorkerInfo {
@@ -161,6 +171,9 @@ message LeaseJobResponse {
 message HeartbeatRequest {
   string job_id = 1;
   string worker_id = 2;
+  // progress is optional; the worker piggy-backs progress reports on
+  // heartbeat to avoid a separate RPC.
+  Progress progress = 3;
 }
 message HeartbeatResponse {
   google.protobuf.Timestamp expires_at = 1;

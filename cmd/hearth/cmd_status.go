@@ -48,17 +48,32 @@ func runStatus(args []string) error {
 	}
 
 	return client.WatchJob(ctx, job.ID(*id), func(j job.Job) {
-		fmt.Printf("[%s] %s state=%s attempt=%d err=%q\n",
-			j.UpdatedAt.Format("15:04:05"), j.ID, j.State, j.Attempt, j.LastError)
+		progress := ""
+		if j.Progress != nil {
+			progress = fmt.Sprintf(" progress=%.0f%%", j.Progress.Percent*100)
+			if j.Progress.Message != "" {
+				progress += fmt.Sprintf(" (%s)", j.Progress.Message)
+			}
+		}
+		fmt.Printf("[%s] %s state=%s attempt=%d%s err=%q\n",
+			j.UpdatedAt.Format("15:04:05"), j.ID, j.State, j.Attempt, progress, j.LastError)
 	})
 }
 
 func printJobTable(jobs []job.Job) {
 	tw := tabwriter.NewWriter(stdout(), 0, 4, 2, ' ', 0)
-	fmt.Fprintln(tw, "ID\tKIND\tSTATE\tATTEMPT\tUPDATED\tERROR")
+	fmt.Fprintln(tw, "ID\tKIND\tSTATE\tATTEMPT\tPROGRESS\tUPDATED\tERROR")
 	for _, j := range jobs {
-		fmt.Fprintf(tw, "%s\t%s\t%s\t%d\t%s\t%s\n",
-			j.ID, j.Spec.Kind, j.State, j.Attempt, j.UpdatedAt.Format("15:04:05"), truncate(j.LastError, 40))
+		progress := "-"
+		if j.Progress != nil {
+			progress = fmt.Sprintf("%.0f%%", j.Progress.Percent*100)
+			if j.Progress.Message != "" {
+				progress += " " + truncate(j.Progress.Message, 24)
+			}
+		}
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%d\t%s\t%s\t%s\n",
+			j.ID, j.Spec.Kind, j.State, j.Attempt, progress,
+			j.UpdatedAt.Format("15:04:05"), truncate(j.LastError, 40))
 	}
 	_ = tw.Flush()
 }

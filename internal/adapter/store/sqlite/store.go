@@ -193,14 +193,38 @@ func (s *Store) LeaseNext(ctx context.Context, kinds []string, workerID string, 
 	return leased, true, nil
 }
 
-// Heartbeat extends the lease on (id, workerID).
-func (s *Store) Heartbeat(ctx context.Context, id job.ID, workerID string, expiresAt time.Time) error {
-	res, err := s.db.ExecContext(ctx, `
-		UPDATE jobs SET expires_at_ns = ?, updated_at_ns = ?
-		 WHERE id = ? AND state = ? AND worker_id = ?`,
-		timeNs(expiresAt), timeNs(expiresAt),
-		string(id), int64(job.StateLeased), workerID,
+// Heartbeat extends the lease on (id, workerID), optionally updating progress.
+func (s *Store) Heartbeat(ctx context.Context, id job.ID, workerID string, expiresAt time.Time, progress *job.Progress) error {
+	var (
+		percent       sql.NullFloat64
+		message       sql.NullString
+		reportedAtNs  sql.NullInt64
 	)
+	if progress != nil {
+		percent = sql.NullFloat64{Float64: progress.Percent, Valid: true}
+		message = sql.NullString{String: progress.Message, Valid: true}
+		reportedAtNs = sql.NullInt64{Int64: timeNs(progress.ReportedAt), Valid: !progress.ReportedAt.IsZero()}
+	}
+
+	var res sql.Result
+	var err error
+	if progress != nil {
+		res, err = s.db.ExecContext(ctx, `
+			UPDATE jobs SET expires_at_ns = ?, updated_at_ns = ?,
+			    progress_percent = ?, progress_message = ?, progress_reported_at_ns = ?
+			 WHERE id = ? AND state = ? AND worker_id = ?`,
+			timeNs(expiresAt), timeNs(expiresAt),
+			percent, message, reportedAtNs,
+			string(id), int64(job.StateLeased), workerID,
+		)
+	} else {
+		res, err = s.db.ExecContext(ctx, `
+			UPDATE jobs SET expires_at_ns = ?, updated_at_ns = ?
+			 WHERE id = ? AND state = ? AND worker_id = ?`,
+			timeNs(expiresAt), timeNs(expiresAt),
+			string(id), int64(job.StateLeased), workerID,
+		)
+	}
 	if err != nil {
 		return err
 	}

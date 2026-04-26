@@ -97,9 +97,8 @@ func (s *Store) LeaseNext(_ context.Context, kinds []string, workerID string, tt
 	return leased, true, nil
 }
 
-// Heartbeat extends the lease's expiry. Errors if (id, workerID) doesn't
-// correspond to the current lease holder.
-func (s *Store) Heartbeat(_ context.Context, id job.ID, workerID string, expiresAt time.Time) error {
+// Heartbeat extends the lease's expiry and optionally records progress.
+func (s *Store) Heartbeat(_ context.Context, id job.ID, workerID string, expiresAt time.Time, progress *job.Progress) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	j, ok := s.jobs[id]
@@ -111,6 +110,10 @@ func (s *Store) Heartbeat(_ context.Context, id job.ID, workerID string, expires
 	}
 	j.Lease.ExpiresAt = expiresAt
 	j.UpdatedAt = expiresAt
+	if progress != nil {
+		cp := *progress
+		j.Progress = &cp
+	}
 	s.jobs[id] = j
 	return nil
 }

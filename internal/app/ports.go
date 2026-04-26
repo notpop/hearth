@@ -41,8 +41,9 @@ type Store interface {
 	LeaseNext(ctx context.Context, kinds []string, workerID string, ttl time.Duration, now time.Time) (j job.Job, ok bool, err error)
 
 	// Heartbeat extends the lease on (id, workerID). Returns an error if
-	// the caller no longer holds the lease.
-	Heartbeat(ctx context.Context, id job.ID, workerID string, expiresAt time.Time) error
+	// the caller no longer holds the lease. If progress is non-nil, it
+	// is also recorded (overwriting the previous progress snapshot).
+	Heartbeat(ctx context.Context, id job.ID, workerID string, expiresAt time.Time, progress *job.Progress) error
 
 	// Complete records a successful result and transitions to Succeeded.
 	Complete(ctx context.Context, id job.ID, workerID string, res job.Result, now time.Time) error

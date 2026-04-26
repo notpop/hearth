@@ -404,6 +404,69 @@ func (x *Result) GetBlobs() []*BlobRef {
 	return nil
 }
 
+type Progress struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// percent is in [0, 1].
+	Percent float64 `protobuf:"fixed64,1,opt,name=percent,proto3" json:"percent,omitempty"`
+	// message is a free-form human-readable description.
+	Message string `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	// reported_at is the worker-side wall-clock time of the report.
+	ReportedAt    *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=reported_at,json=reportedAt,proto3" json:"reported_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Progress) Reset() {
+	*x = Progress{}
+	mi := &file_hearth_v1_hearth_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Progress) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Progress) ProtoMessage() {}
+
+func (x *Progress) ProtoReflect() protoreflect.Message {
+	mi := &file_hearth_v1_hearth_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Progress.ProtoReflect.Descriptor instead.
+func (*Progress) Descriptor() ([]byte, []int) {
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *Progress) GetPercent() float64 {
+	if x != nil {
+		return x.Percent
+	}
+	return 0
+}
+
+func (x *Progress) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *Progress) GetReportedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ReportedAt
+	}
+	return nil
+}
+
 type Job struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -416,13 +479,14 @@ type Job struct {
 	NextRunAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=next_run_at,json=nextRunAt,proto3" json:"next_run_at,omitempty"`
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Progress      *Progress              `protobuf:"bytes,11,opt,name=progress,proto3" json:"progress,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Job) Reset() {
 	*x = Job{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[5]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -434,7 +498,7 @@ func (x *Job) String() string {
 func (*Job) ProtoMessage() {}
 
 func (x *Job) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[5]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -447,7 +511,7 @@ func (x *Job) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Job.ProtoReflect.Descriptor instead.
 func (*Job) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{5}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Job) GetId() string {
@@ -520,6 +584,13 @@ func (x *Job) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *Job) GetProgress() *Progress {
+	if x != nil {
+		return x.Progress
+	}
+	return nil
+}
+
 type WorkerInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -536,7 +607,7 @@ type WorkerInfo struct {
 
 func (x *WorkerInfo) Reset() {
 	*x = WorkerInfo{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[6]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -548,7 +619,7 @@ func (x *WorkerInfo) String() string {
 func (*WorkerInfo) ProtoMessage() {}
 
 func (x *WorkerInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[6]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -561,7 +632,7 @@ func (x *WorkerInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkerInfo.ProtoReflect.Descriptor instead.
 func (*WorkerInfo) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{6}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *WorkerInfo) GetId() string {
@@ -629,7 +700,7 @@ type SubmitJobRequest struct {
 
 func (x *SubmitJobRequest) Reset() {
 	*x = SubmitJobRequest{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[7]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -641,7 +712,7 @@ func (x *SubmitJobRequest) String() string {
 func (*SubmitJobRequest) ProtoMessage() {}
 
 func (x *SubmitJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[7]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -654,7 +725,7 @@ func (x *SubmitJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitJobRequest.ProtoReflect.Descriptor instead.
 func (*SubmitJobRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{7}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SubmitJobRequest) GetSpec() *Spec {
@@ -673,7 +744,7 @@ type SubmitJobResponse struct {
 
 func (x *SubmitJobResponse) Reset() {
 	*x = SubmitJobResponse{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[8]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -685,7 +756,7 @@ func (x *SubmitJobResponse) String() string {
 func (*SubmitJobResponse) ProtoMessage() {}
 
 func (x *SubmitJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[8]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -698,7 +769,7 @@ func (x *SubmitJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitJobResponse.ProtoReflect.Descriptor instead.
 func (*SubmitJobResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{8}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SubmitJobResponse) GetId() string {
@@ -717,7 +788,7 @@ type GetJobRequest struct {
 
 func (x *GetJobRequest) Reset() {
 	*x = GetJobRequest{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[9]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -729,7 +800,7 @@ func (x *GetJobRequest) String() string {
 func (*GetJobRequest) ProtoMessage() {}
 
 func (x *GetJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[9]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -742,7 +813,7 @@ func (x *GetJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetJobRequest.ProtoReflect.Descriptor instead.
 func (*GetJobRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{9}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetJobRequest) GetId() string {
@@ -763,7 +834,7 @@ type ListJobsRequest struct {
 
 func (x *ListJobsRequest) Reset() {
 	*x = ListJobsRequest{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[10]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -775,7 +846,7 @@ func (x *ListJobsRequest) String() string {
 func (*ListJobsRequest) ProtoMessage() {}
 
 func (x *ListJobsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[10]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -788,7 +859,7 @@ func (x *ListJobsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListJobsRequest.ProtoReflect.Descriptor instead.
 func (*ListJobsRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{10}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ListJobsRequest) GetStates() []State {
@@ -821,7 +892,7 @@ type ListJobsResponse struct {
 
 func (x *ListJobsResponse) Reset() {
 	*x = ListJobsResponse{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[11]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -833,7 +904,7 @@ func (x *ListJobsResponse) String() string {
 func (*ListJobsResponse) ProtoMessage() {}
 
 func (x *ListJobsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[11]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -846,7 +917,7 @@ func (x *ListJobsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListJobsResponse.ProtoReflect.Descriptor instead.
 func (*ListJobsResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{11}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ListJobsResponse) GetJobs() []*Job {
@@ -865,7 +936,7 @@ type CancelJobRequest struct {
 
 func (x *CancelJobRequest) Reset() {
 	*x = CancelJobRequest{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[12]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -877,7 +948,7 @@ func (x *CancelJobRequest) String() string {
 func (*CancelJobRequest) ProtoMessage() {}
 
 func (x *CancelJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[12]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -890,7 +961,7 @@ func (x *CancelJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelJobRequest.ProtoReflect.Descriptor instead.
 func (*CancelJobRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{12}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *CancelJobRequest) GetId() string {
@@ -908,7 +979,7 @@ type CancelJobResponse struct {
 
 func (x *CancelJobResponse) Reset() {
 	*x = CancelJobResponse{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[13]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -920,7 +991,7 @@ func (x *CancelJobResponse) String() string {
 func (*CancelJobResponse) ProtoMessage() {}
 
 func (x *CancelJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[13]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -933,7 +1004,7 @@ func (x *CancelJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelJobResponse.ProtoReflect.Descriptor instead.
 func (*CancelJobResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{13}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{14}
 }
 
 type WatchJobRequest struct {
@@ -945,7 +1016,7 @@ type WatchJobRequest struct {
 
 func (x *WatchJobRequest) Reset() {
 	*x = WatchJobRequest{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[14]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -957,7 +1028,7 @@ func (x *WatchJobRequest) String() string {
 func (*WatchJobRequest) ProtoMessage() {}
 
 func (x *WatchJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[14]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -970,7 +1041,7 @@ func (x *WatchJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchJobRequest.ProtoReflect.Descriptor instead.
 func (*WatchJobRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{14}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *WatchJobRequest) GetId() string {
@@ -989,7 +1060,7 @@ type RegisterWorkerRequest struct {
 
 func (x *RegisterWorkerRequest) Reset() {
 	*x = RegisterWorkerRequest{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[15]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1001,7 +1072,7 @@ func (x *RegisterWorkerRequest) String() string {
 func (*RegisterWorkerRequest) ProtoMessage() {}
 
 func (x *RegisterWorkerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[15]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1014,7 +1085,7 @@ func (x *RegisterWorkerRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterWorkerRequest.ProtoReflect.Descriptor instead.
 func (*RegisterWorkerRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{15}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *RegisterWorkerRequest) GetInfo() *WorkerInfo {
@@ -1033,7 +1104,7 @@ type RegisterWorkerResponse struct {
 
 func (x *RegisterWorkerResponse) Reset() {
 	*x = RegisterWorkerResponse{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[16]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1045,7 +1116,7 @@ func (x *RegisterWorkerResponse) String() string {
 func (*RegisterWorkerResponse) ProtoMessage() {}
 
 func (x *RegisterWorkerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[16]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1058,7 +1129,7 @@ func (x *RegisterWorkerResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterWorkerResponse.ProtoReflect.Descriptor instead.
 func (*RegisterWorkerResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{16}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *RegisterWorkerResponse) GetHeartbeatInterval() *durationpb.Duration {
@@ -1080,7 +1151,7 @@ type LeaseJobRequest struct {
 
 func (x *LeaseJobRequest) Reset() {
 	*x = LeaseJobRequest{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[17]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1092,7 +1163,7 @@ func (x *LeaseJobRequest) String() string {
 func (*LeaseJobRequest) ProtoMessage() {}
 
 func (x *LeaseJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[17]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1105,7 +1176,7 @@ func (x *LeaseJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaseJobRequest.ProtoReflect.Descriptor instead.
 func (*LeaseJobRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{17}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *LeaseJobRequest) GetWorkerId() string {
@@ -1146,7 +1217,7 @@ type LeaseJobResponse struct {
 
 func (x *LeaseJobResponse) Reset() {
 	*x = LeaseJobResponse{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[18]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1158,7 +1229,7 @@ func (x *LeaseJobResponse) String() string {
 func (*LeaseJobResponse) ProtoMessage() {}
 
 func (x *LeaseJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[18]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1171,7 +1242,7 @@ func (x *LeaseJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaseJobResponse.ProtoReflect.Descriptor instead.
 func (*LeaseJobResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{18}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *LeaseJobResponse) GetJob() *Job {
@@ -1182,16 +1253,19 @@ func (x *LeaseJobResponse) GetJob() *Job {
 }
 
 type HeartbeatRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	JobId         string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
-	WorkerId      string                 `protobuf:"bytes,2,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	JobId    string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	WorkerId string                 `protobuf:"bytes,2,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	// progress is optional; the worker piggy-backs progress reports on
+	// heartbeat to avoid a separate RPC.
+	Progress      *Progress `protobuf:"bytes,3,opt,name=progress,proto3" json:"progress,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *HeartbeatRequest) Reset() {
 	*x = HeartbeatRequest{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[19]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1203,7 +1277,7 @@ func (x *HeartbeatRequest) String() string {
 func (*HeartbeatRequest) ProtoMessage() {}
 
 func (x *HeartbeatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[19]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1216,7 +1290,7 @@ func (x *HeartbeatRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HeartbeatRequest.ProtoReflect.Descriptor instead.
 func (*HeartbeatRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{19}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *HeartbeatRequest) GetJobId() string {
@@ -1233,6 +1307,13 @@ func (x *HeartbeatRequest) GetWorkerId() string {
 	return ""
 }
 
+func (x *HeartbeatRequest) GetProgress() *Progress {
+	if x != nil {
+		return x.Progress
+	}
+	return nil
+}
+
 type HeartbeatResponse struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	ExpiresAt *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
@@ -1244,7 +1325,7 @@ type HeartbeatResponse struct {
 
 func (x *HeartbeatResponse) Reset() {
 	*x = HeartbeatResponse{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[20]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1256,7 +1337,7 @@ func (x *HeartbeatResponse) String() string {
 func (*HeartbeatResponse) ProtoMessage() {}
 
 func (x *HeartbeatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[20]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1269,7 +1350,7 @@ func (x *HeartbeatResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HeartbeatResponse.ProtoReflect.Descriptor instead.
 func (*HeartbeatResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{20}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *HeartbeatResponse) GetExpiresAt() *timestamppb.Timestamp {
@@ -1297,7 +1378,7 @@ type CompleteJobRequest struct {
 
 func (x *CompleteJobRequest) Reset() {
 	*x = CompleteJobRequest{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[21]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1309,7 +1390,7 @@ func (x *CompleteJobRequest) String() string {
 func (*CompleteJobRequest) ProtoMessage() {}
 
 func (x *CompleteJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[21]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1322,7 +1403,7 @@ func (x *CompleteJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompleteJobRequest.ProtoReflect.Descriptor instead.
 func (*CompleteJobRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{21}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *CompleteJobRequest) GetJobId() string {
@@ -1354,7 +1435,7 @@ type CompleteJobResponse struct {
 
 func (x *CompleteJobResponse) Reset() {
 	*x = CompleteJobResponse{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[22]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1366,7 +1447,7 @@ func (x *CompleteJobResponse) String() string {
 func (*CompleteJobResponse) ProtoMessage() {}
 
 func (x *CompleteJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[22]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1379,7 +1460,7 @@ func (x *CompleteJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompleteJobResponse.ProtoReflect.Descriptor instead.
 func (*CompleteJobResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{22}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{23}
 }
 
 type FailJobRequest struct {
@@ -1393,7 +1474,7 @@ type FailJobRequest struct {
 
 func (x *FailJobRequest) Reset() {
 	*x = FailJobRequest{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[23]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1405,7 +1486,7 @@ func (x *FailJobRequest) String() string {
 func (*FailJobRequest) ProtoMessage() {}
 
 func (x *FailJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[23]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1418,7 +1499,7 @@ func (x *FailJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FailJobRequest.ProtoReflect.Descriptor instead.
 func (*FailJobRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{23}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *FailJobRequest) GetJobId() string {
@@ -1452,7 +1533,7 @@ type FailJobResponse struct {
 
 func (x *FailJobResponse) Reset() {
 	*x = FailJobResponse{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[24]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1464,7 +1545,7 @@ func (x *FailJobResponse) String() string {
 func (*FailJobResponse) ProtoMessage() {}
 
 func (x *FailJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[24]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1477,7 +1558,7 @@ func (x *FailJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FailJobResponse.ProtoReflect.Descriptor instead.
 func (*FailJobResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{24}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *FailJobResponse) GetWillRetry() bool {
@@ -1507,7 +1588,7 @@ type PutBlobRequest struct {
 
 func (x *PutBlobRequest) Reset() {
 	*x = PutBlobRequest{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[25]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1519,7 +1600,7 @@ func (x *PutBlobRequest) String() string {
 func (*PutBlobRequest) ProtoMessage() {}
 
 func (x *PutBlobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[25]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1532,7 +1613,7 @@ func (x *PutBlobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutBlobRequest.ProtoReflect.Descriptor instead.
 func (*PutBlobRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{25}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *PutBlobRequest) GetPayload() isPutBlobRequest_Payload {
@@ -1586,7 +1667,7 @@ type PutBlobHeader struct {
 
 func (x *PutBlobHeader) Reset() {
 	*x = PutBlobHeader{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[26]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1598,7 +1679,7 @@ func (x *PutBlobHeader) String() string {
 func (*PutBlobHeader) ProtoMessage() {}
 
 func (x *PutBlobHeader) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[26]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1611,7 +1692,7 @@ func (x *PutBlobHeader) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutBlobHeader.ProtoReflect.Descriptor instead.
 func (*PutBlobHeader) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{26}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *PutBlobHeader) GetSize() int64 {
@@ -1630,7 +1711,7 @@ type PutBlobResponse struct {
 
 func (x *PutBlobResponse) Reset() {
 	*x = PutBlobResponse{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[27]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1642,7 +1723,7 @@ func (x *PutBlobResponse) String() string {
 func (*PutBlobResponse) ProtoMessage() {}
 
 func (x *PutBlobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[27]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1655,7 +1736,7 @@ func (x *PutBlobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutBlobResponse.ProtoReflect.Descriptor instead.
 func (*PutBlobResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{27}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *PutBlobResponse) GetRef() *BlobRef {
@@ -1674,7 +1755,7 @@ type GetBlobRequest struct {
 
 func (x *GetBlobRequest) Reset() {
 	*x = GetBlobRequest{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[28]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1686,7 +1767,7 @@ func (x *GetBlobRequest) String() string {
 func (*GetBlobRequest) ProtoMessage() {}
 
 func (x *GetBlobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[28]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1699,7 +1780,7 @@ func (x *GetBlobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetBlobRequest.ProtoReflect.Descriptor instead.
 func (*GetBlobRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{28}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *GetBlobRequest) GetRef() *BlobRef {
@@ -1718,7 +1799,7 @@ type GetBlobResponse struct {
 
 func (x *GetBlobResponse) Reset() {
 	*x = GetBlobResponse{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[29]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1730,7 +1811,7 @@ func (x *GetBlobResponse) String() string {
 func (*GetBlobResponse) ProtoMessage() {}
 
 func (x *GetBlobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[29]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1743,7 +1824,7 @@ func (x *GetBlobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetBlobResponse.ProtoReflect.Descriptor instead.
 func (*GetBlobResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{29}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *GetBlobResponse) GetChunk() []byte {
@@ -1762,7 +1843,7 @@ type HasBlobRequest struct {
 
 func (x *HasBlobRequest) Reset() {
 	*x = HasBlobRequest{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[30]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1774,7 +1855,7 @@ func (x *HasBlobRequest) String() string {
 func (*HasBlobRequest) ProtoMessage() {}
 
 func (x *HasBlobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[30]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1787,7 +1868,7 @@ func (x *HasBlobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HasBlobRequest.ProtoReflect.Descriptor instead.
 func (*HasBlobRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{30}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *HasBlobRequest) GetRef() *BlobRef {
@@ -1806,7 +1887,7 @@ type HasBlobResponse struct {
 
 func (x *HasBlobResponse) Reset() {
 	*x = HasBlobResponse{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[31]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1818,7 +1899,7 @@ func (x *HasBlobResponse) String() string {
 func (*HasBlobResponse) ProtoMessage() {}
 
 func (x *HasBlobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[31]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1831,7 +1912,7 @@ func (x *HasBlobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HasBlobResponse.ProtoReflect.Descriptor instead.
 func (*HasBlobResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{31}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *HasBlobResponse) GetPresent() bool {
@@ -1849,7 +1930,7 @@ type ListNodesRequest struct {
 
 func (x *ListNodesRequest) Reset() {
 	*x = ListNodesRequest{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[32]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1861,7 +1942,7 @@ func (x *ListNodesRequest) String() string {
 func (*ListNodesRequest) ProtoMessage() {}
 
 func (x *ListNodesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[32]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1874,7 +1955,7 @@ func (x *ListNodesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListNodesRequest.ProtoReflect.Descriptor instead.
 func (*ListNodesRequest) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{32}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{33}
 }
 
 type ListNodesResponse struct {
@@ -1886,7 +1967,7 @@ type ListNodesResponse struct {
 
 func (x *ListNodesResponse) Reset() {
 	*x = ListNodesResponse{}
-	mi := &file_hearth_v1_hearth_proto_msgTypes[33]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1898,7 +1979,7 @@ func (x *ListNodesResponse) String() string {
 func (*ListNodesResponse) ProtoMessage() {}
 
 func (x *ListNodesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hearth_v1_hearth_proto_msgTypes[33]
+	mi := &file_hearth_v1_hearth_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1911,7 +1992,7 @@ func (x *ListNodesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListNodesResponse.ProtoReflect.Descriptor instead.
 func (*ListNodesResponse) Descriptor() ([]byte, []int) {
-	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{33}
+	return file_hearth_v1_hearth_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *ListNodesResponse) GetNodes() []*WorkerInfo {
@@ -1950,7 +2031,12 @@ const file_hearth_v1_hearth_proto_rawDesc = "" +
 	"expires_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"L\n" +
 	"\x06Result\x12\x18\n" +
 	"\apayload\x18\x01 \x01(\fR\apayload\x12(\n" +
-	"\x05blobs\x18\x02 \x03(\v2\x12.hearth.v1.BlobRefR\x05blobs\"\xa0\x03\n" +
+	"\x05blobs\x18\x02 \x03(\v2\x12.hearth.v1.BlobRefR\x05blobs\"{\n" +
+	"\bProgress\x12\x18\n" +
+	"\apercent\x18\x01 \x01(\x01R\apercent\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12;\n" +
+	"\vreported_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"reportedAt\"\xd1\x03\n" +
 	"\x03Job\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12#\n" +
 	"\x04spec\x18\x02 \x01(\v2\x0f.hearth.v1.SpecR\x04spec\x12&\n" +
@@ -1965,7 +2051,8 @@ const file_hearth_v1_hearth_proto_rawDesc = "" +
 	"created_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xfe\x01\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12/\n" +
+	"\bprogress\x18\v \x01(\v2\x13.hearth.v1.ProgressR\bprogress\"\xfe\x01\n" +
 	"\n" +
 	"WorkerInfo\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
@@ -2003,10 +2090,11 @@ const file_hearth_v1_hearth_proto_rawDesc = "" +
 	"\fpoll_timeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\vpollTimeout\x126\n" +
 	"\tlease_ttl\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\bleaseTtl\"4\n" +
 	"\x10LeaseJobResponse\x12 \n" +
-	"\x03job\x18\x01 \x01(\v2\x0e.hearth.v1.JobR\x03job\"F\n" +
+	"\x03job\x18\x01 \x01(\v2\x0e.hearth.v1.JobR\x03job\"w\n" +
 	"\x10HeartbeatRequest\x12\x15\n" +
 	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x1b\n" +
-	"\tworker_id\x18\x02 \x01(\tR\bworkerId\"f\n" +
+	"\tworker_id\x18\x02 \x01(\tR\bworkerId\x12/\n" +
+	"\bprogress\x18\x03 \x01(\v2\x13.hearth.v1.ProgressR\bprogress\"f\n" +
 	"\x11HeartbeatResponse\x129\n" +
 	"\n" +
 	"expires_at\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12\x16\n" +
@@ -2079,7 +2167,7 @@ func file_hearth_v1_hearth_proto_rawDescGZIP() []byte {
 }
 
 var file_hearth_v1_hearth_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_hearth_v1_hearth_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
+var file_hearth_v1_hearth_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_hearth_v1_hearth_proto_goTypes = []any{
 	(State)(0),                     // 0: hearth.v1.State
 	(*BlobRef)(nil),                // 1: hearth.v1.BlobRef
@@ -2087,105 +2175,109 @@ var file_hearth_v1_hearth_proto_goTypes = []any{
 	(*Spec)(nil),                   // 3: hearth.v1.Spec
 	(*Lease)(nil),                  // 4: hearth.v1.Lease
 	(*Result)(nil),                 // 5: hearth.v1.Result
-	(*Job)(nil),                    // 6: hearth.v1.Job
-	(*WorkerInfo)(nil),             // 7: hearth.v1.WorkerInfo
-	(*SubmitJobRequest)(nil),       // 8: hearth.v1.SubmitJobRequest
-	(*SubmitJobResponse)(nil),      // 9: hearth.v1.SubmitJobResponse
-	(*GetJobRequest)(nil),          // 10: hearth.v1.GetJobRequest
-	(*ListJobsRequest)(nil),        // 11: hearth.v1.ListJobsRequest
-	(*ListJobsResponse)(nil),       // 12: hearth.v1.ListJobsResponse
-	(*CancelJobRequest)(nil),       // 13: hearth.v1.CancelJobRequest
-	(*CancelJobResponse)(nil),      // 14: hearth.v1.CancelJobResponse
-	(*WatchJobRequest)(nil),        // 15: hearth.v1.WatchJobRequest
-	(*RegisterWorkerRequest)(nil),  // 16: hearth.v1.RegisterWorkerRequest
-	(*RegisterWorkerResponse)(nil), // 17: hearth.v1.RegisterWorkerResponse
-	(*LeaseJobRequest)(nil),        // 18: hearth.v1.LeaseJobRequest
-	(*LeaseJobResponse)(nil),       // 19: hearth.v1.LeaseJobResponse
-	(*HeartbeatRequest)(nil),       // 20: hearth.v1.HeartbeatRequest
-	(*HeartbeatResponse)(nil),      // 21: hearth.v1.HeartbeatResponse
-	(*CompleteJobRequest)(nil),     // 22: hearth.v1.CompleteJobRequest
-	(*CompleteJobResponse)(nil),    // 23: hearth.v1.CompleteJobResponse
-	(*FailJobRequest)(nil),         // 24: hearth.v1.FailJobRequest
-	(*FailJobResponse)(nil),        // 25: hearth.v1.FailJobResponse
-	(*PutBlobRequest)(nil),         // 26: hearth.v1.PutBlobRequest
-	(*PutBlobHeader)(nil),          // 27: hearth.v1.PutBlobHeader
-	(*PutBlobResponse)(nil),        // 28: hearth.v1.PutBlobResponse
-	(*GetBlobRequest)(nil),         // 29: hearth.v1.GetBlobRequest
-	(*GetBlobResponse)(nil),        // 30: hearth.v1.GetBlobResponse
-	(*HasBlobRequest)(nil),         // 31: hearth.v1.HasBlobRequest
-	(*HasBlobResponse)(nil),        // 32: hearth.v1.HasBlobResponse
-	(*ListNodesRequest)(nil),       // 33: hearth.v1.ListNodesRequest
-	(*ListNodesResponse)(nil),      // 34: hearth.v1.ListNodesResponse
-	(*durationpb.Duration)(nil),    // 35: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil),  // 36: google.protobuf.Timestamp
+	(*Progress)(nil),               // 6: hearth.v1.Progress
+	(*Job)(nil),                    // 7: hearth.v1.Job
+	(*WorkerInfo)(nil),             // 8: hearth.v1.WorkerInfo
+	(*SubmitJobRequest)(nil),       // 9: hearth.v1.SubmitJobRequest
+	(*SubmitJobResponse)(nil),      // 10: hearth.v1.SubmitJobResponse
+	(*GetJobRequest)(nil),          // 11: hearth.v1.GetJobRequest
+	(*ListJobsRequest)(nil),        // 12: hearth.v1.ListJobsRequest
+	(*ListJobsResponse)(nil),       // 13: hearth.v1.ListJobsResponse
+	(*CancelJobRequest)(nil),       // 14: hearth.v1.CancelJobRequest
+	(*CancelJobResponse)(nil),      // 15: hearth.v1.CancelJobResponse
+	(*WatchJobRequest)(nil),        // 16: hearth.v1.WatchJobRequest
+	(*RegisterWorkerRequest)(nil),  // 17: hearth.v1.RegisterWorkerRequest
+	(*RegisterWorkerResponse)(nil), // 18: hearth.v1.RegisterWorkerResponse
+	(*LeaseJobRequest)(nil),        // 19: hearth.v1.LeaseJobRequest
+	(*LeaseJobResponse)(nil),       // 20: hearth.v1.LeaseJobResponse
+	(*HeartbeatRequest)(nil),       // 21: hearth.v1.HeartbeatRequest
+	(*HeartbeatResponse)(nil),      // 22: hearth.v1.HeartbeatResponse
+	(*CompleteJobRequest)(nil),     // 23: hearth.v1.CompleteJobRequest
+	(*CompleteJobResponse)(nil),    // 24: hearth.v1.CompleteJobResponse
+	(*FailJobRequest)(nil),         // 25: hearth.v1.FailJobRequest
+	(*FailJobResponse)(nil),        // 26: hearth.v1.FailJobResponse
+	(*PutBlobRequest)(nil),         // 27: hearth.v1.PutBlobRequest
+	(*PutBlobHeader)(nil),          // 28: hearth.v1.PutBlobHeader
+	(*PutBlobResponse)(nil),        // 29: hearth.v1.PutBlobResponse
+	(*GetBlobRequest)(nil),         // 30: hearth.v1.GetBlobRequest
+	(*GetBlobResponse)(nil),        // 31: hearth.v1.GetBlobResponse
+	(*HasBlobRequest)(nil),         // 32: hearth.v1.HasBlobRequest
+	(*HasBlobResponse)(nil),        // 33: hearth.v1.HasBlobResponse
+	(*ListNodesRequest)(nil),       // 34: hearth.v1.ListNodesRequest
+	(*ListNodesResponse)(nil),      // 35: hearth.v1.ListNodesResponse
+	(*durationpb.Duration)(nil),    // 36: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil),  // 37: google.protobuf.Timestamp
 }
 var file_hearth_v1_hearth_proto_depIdxs = []int32{
-	35, // 0: hearth.v1.BackoffPolicy.initial:type_name -> google.protobuf.Duration
-	35, // 1: hearth.v1.BackoffPolicy.max:type_name -> google.protobuf.Duration
+	36, // 0: hearth.v1.BackoffPolicy.initial:type_name -> google.protobuf.Duration
+	36, // 1: hearth.v1.BackoffPolicy.max:type_name -> google.protobuf.Duration
 	1,  // 2: hearth.v1.Spec.blobs:type_name -> hearth.v1.BlobRef
-	35, // 3: hearth.v1.Spec.lease_ttl:type_name -> google.protobuf.Duration
+	36, // 3: hearth.v1.Spec.lease_ttl:type_name -> google.protobuf.Duration
 	2,  // 4: hearth.v1.Spec.backoff:type_name -> hearth.v1.BackoffPolicy
-	36, // 5: hearth.v1.Lease.leased_at:type_name -> google.protobuf.Timestamp
-	36, // 6: hearth.v1.Lease.expires_at:type_name -> google.protobuf.Timestamp
+	37, // 5: hearth.v1.Lease.leased_at:type_name -> google.protobuf.Timestamp
+	37, // 6: hearth.v1.Lease.expires_at:type_name -> google.protobuf.Timestamp
 	1,  // 7: hearth.v1.Result.blobs:type_name -> hearth.v1.BlobRef
-	3,  // 8: hearth.v1.Job.spec:type_name -> hearth.v1.Spec
-	0,  // 9: hearth.v1.Job.state:type_name -> hearth.v1.State
-	4,  // 10: hearth.v1.Job.lease:type_name -> hearth.v1.Lease
-	5,  // 11: hearth.v1.Job.result:type_name -> hearth.v1.Result
-	36, // 12: hearth.v1.Job.next_run_at:type_name -> google.protobuf.Timestamp
-	36, // 13: hearth.v1.Job.created_at:type_name -> google.protobuf.Timestamp
-	36, // 14: hearth.v1.Job.updated_at:type_name -> google.protobuf.Timestamp
-	36, // 15: hearth.v1.WorkerInfo.joined_at:type_name -> google.protobuf.Timestamp
-	36, // 16: hearth.v1.WorkerInfo.last_seen:type_name -> google.protobuf.Timestamp
-	3,  // 17: hearth.v1.SubmitJobRequest.spec:type_name -> hearth.v1.Spec
-	0,  // 18: hearth.v1.ListJobsRequest.states:type_name -> hearth.v1.State
-	6,  // 19: hearth.v1.ListJobsResponse.jobs:type_name -> hearth.v1.Job
-	7,  // 20: hearth.v1.RegisterWorkerRequest.info:type_name -> hearth.v1.WorkerInfo
-	35, // 21: hearth.v1.RegisterWorkerResponse.heartbeat_interval:type_name -> google.protobuf.Duration
-	35, // 22: hearth.v1.LeaseJobRequest.poll_timeout:type_name -> google.protobuf.Duration
-	35, // 23: hearth.v1.LeaseJobRequest.lease_ttl:type_name -> google.protobuf.Duration
-	6,  // 24: hearth.v1.LeaseJobResponse.job:type_name -> hearth.v1.Job
-	36, // 25: hearth.v1.HeartbeatResponse.expires_at:type_name -> google.protobuf.Timestamp
-	5,  // 26: hearth.v1.CompleteJobRequest.result:type_name -> hearth.v1.Result
-	36, // 27: hearth.v1.FailJobResponse.next_run_at:type_name -> google.protobuf.Timestamp
-	27, // 28: hearth.v1.PutBlobRequest.header:type_name -> hearth.v1.PutBlobHeader
-	1,  // 29: hearth.v1.PutBlobResponse.ref:type_name -> hearth.v1.BlobRef
-	1,  // 30: hearth.v1.GetBlobRequest.ref:type_name -> hearth.v1.BlobRef
-	1,  // 31: hearth.v1.HasBlobRequest.ref:type_name -> hearth.v1.BlobRef
-	7,  // 32: hearth.v1.ListNodesResponse.nodes:type_name -> hearth.v1.WorkerInfo
-	8,  // 33: hearth.v1.Coordinator.SubmitJob:input_type -> hearth.v1.SubmitJobRequest
-	10, // 34: hearth.v1.Coordinator.GetJob:input_type -> hearth.v1.GetJobRequest
-	11, // 35: hearth.v1.Coordinator.ListJobs:input_type -> hearth.v1.ListJobsRequest
-	13, // 36: hearth.v1.Coordinator.CancelJob:input_type -> hearth.v1.CancelJobRequest
-	15, // 37: hearth.v1.Coordinator.WatchJob:input_type -> hearth.v1.WatchJobRequest
-	16, // 38: hearth.v1.Coordinator.RegisterWorker:input_type -> hearth.v1.RegisterWorkerRequest
-	18, // 39: hearth.v1.Coordinator.LeaseJob:input_type -> hearth.v1.LeaseJobRequest
-	20, // 40: hearth.v1.Coordinator.Heartbeat:input_type -> hearth.v1.HeartbeatRequest
-	22, // 41: hearth.v1.Coordinator.CompleteJob:input_type -> hearth.v1.CompleteJobRequest
-	24, // 42: hearth.v1.Coordinator.FailJob:input_type -> hearth.v1.FailJobRequest
-	26, // 43: hearth.v1.Coordinator.PutBlob:input_type -> hearth.v1.PutBlobRequest
-	29, // 44: hearth.v1.Coordinator.GetBlob:input_type -> hearth.v1.GetBlobRequest
-	31, // 45: hearth.v1.Coordinator.HasBlob:input_type -> hearth.v1.HasBlobRequest
-	33, // 46: hearth.v1.Coordinator.ListNodes:input_type -> hearth.v1.ListNodesRequest
-	9,  // 47: hearth.v1.Coordinator.SubmitJob:output_type -> hearth.v1.SubmitJobResponse
-	6,  // 48: hearth.v1.Coordinator.GetJob:output_type -> hearth.v1.Job
-	12, // 49: hearth.v1.Coordinator.ListJobs:output_type -> hearth.v1.ListJobsResponse
-	14, // 50: hearth.v1.Coordinator.CancelJob:output_type -> hearth.v1.CancelJobResponse
-	6,  // 51: hearth.v1.Coordinator.WatchJob:output_type -> hearth.v1.Job
-	17, // 52: hearth.v1.Coordinator.RegisterWorker:output_type -> hearth.v1.RegisterWorkerResponse
-	19, // 53: hearth.v1.Coordinator.LeaseJob:output_type -> hearth.v1.LeaseJobResponse
-	21, // 54: hearth.v1.Coordinator.Heartbeat:output_type -> hearth.v1.HeartbeatResponse
-	23, // 55: hearth.v1.Coordinator.CompleteJob:output_type -> hearth.v1.CompleteJobResponse
-	25, // 56: hearth.v1.Coordinator.FailJob:output_type -> hearth.v1.FailJobResponse
-	28, // 57: hearth.v1.Coordinator.PutBlob:output_type -> hearth.v1.PutBlobResponse
-	30, // 58: hearth.v1.Coordinator.GetBlob:output_type -> hearth.v1.GetBlobResponse
-	32, // 59: hearth.v1.Coordinator.HasBlob:output_type -> hearth.v1.HasBlobResponse
-	34, // 60: hearth.v1.Coordinator.ListNodes:output_type -> hearth.v1.ListNodesResponse
-	47, // [47:61] is the sub-list for method output_type
-	33, // [33:47] is the sub-list for method input_type
-	33, // [33:33] is the sub-list for extension type_name
-	33, // [33:33] is the sub-list for extension extendee
-	0,  // [0:33] is the sub-list for field type_name
+	37, // 8: hearth.v1.Progress.reported_at:type_name -> google.protobuf.Timestamp
+	3,  // 9: hearth.v1.Job.spec:type_name -> hearth.v1.Spec
+	0,  // 10: hearth.v1.Job.state:type_name -> hearth.v1.State
+	4,  // 11: hearth.v1.Job.lease:type_name -> hearth.v1.Lease
+	5,  // 12: hearth.v1.Job.result:type_name -> hearth.v1.Result
+	37, // 13: hearth.v1.Job.next_run_at:type_name -> google.protobuf.Timestamp
+	37, // 14: hearth.v1.Job.created_at:type_name -> google.protobuf.Timestamp
+	37, // 15: hearth.v1.Job.updated_at:type_name -> google.protobuf.Timestamp
+	6,  // 16: hearth.v1.Job.progress:type_name -> hearth.v1.Progress
+	37, // 17: hearth.v1.WorkerInfo.joined_at:type_name -> google.protobuf.Timestamp
+	37, // 18: hearth.v1.WorkerInfo.last_seen:type_name -> google.protobuf.Timestamp
+	3,  // 19: hearth.v1.SubmitJobRequest.spec:type_name -> hearth.v1.Spec
+	0,  // 20: hearth.v1.ListJobsRequest.states:type_name -> hearth.v1.State
+	7,  // 21: hearth.v1.ListJobsResponse.jobs:type_name -> hearth.v1.Job
+	8,  // 22: hearth.v1.RegisterWorkerRequest.info:type_name -> hearth.v1.WorkerInfo
+	36, // 23: hearth.v1.RegisterWorkerResponse.heartbeat_interval:type_name -> google.protobuf.Duration
+	36, // 24: hearth.v1.LeaseJobRequest.poll_timeout:type_name -> google.protobuf.Duration
+	36, // 25: hearth.v1.LeaseJobRequest.lease_ttl:type_name -> google.protobuf.Duration
+	7,  // 26: hearth.v1.LeaseJobResponse.job:type_name -> hearth.v1.Job
+	6,  // 27: hearth.v1.HeartbeatRequest.progress:type_name -> hearth.v1.Progress
+	37, // 28: hearth.v1.HeartbeatResponse.expires_at:type_name -> google.protobuf.Timestamp
+	5,  // 29: hearth.v1.CompleteJobRequest.result:type_name -> hearth.v1.Result
+	37, // 30: hearth.v1.FailJobResponse.next_run_at:type_name -> google.protobuf.Timestamp
+	28, // 31: hearth.v1.PutBlobRequest.header:type_name -> hearth.v1.PutBlobHeader
+	1,  // 32: hearth.v1.PutBlobResponse.ref:type_name -> hearth.v1.BlobRef
+	1,  // 33: hearth.v1.GetBlobRequest.ref:type_name -> hearth.v1.BlobRef
+	1,  // 34: hearth.v1.HasBlobRequest.ref:type_name -> hearth.v1.BlobRef
+	8,  // 35: hearth.v1.ListNodesResponse.nodes:type_name -> hearth.v1.WorkerInfo
+	9,  // 36: hearth.v1.Coordinator.SubmitJob:input_type -> hearth.v1.SubmitJobRequest
+	11, // 37: hearth.v1.Coordinator.GetJob:input_type -> hearth.v1.GetJobRequest
+	12, // 38: hearth.v1.Coordinator.ListJobs:input_type -> hearth.v1.ListJobsRequest
+	14, // 39: hearth.v1.Coordinator.CancelJob:input_type -> hearth.v1.CancelJobRequest
+	16, // 40: hearth.v1.Coordinator.WatchJob:input_type -> hearth.v1.WatchJobRequest
+	17, // 41: hearth.v1.Coordinator.RegisterWorker:input_type -> hearth.v1.RegisterWorkerRequest
+	19, // 42: hearth.v1.Coordinator.LeaseJob:input_type -> hearth.v1.LeaseJobRequest
+	21, // 43: hearth.v1.Coordinator.Heartbeat:input_type -> hearth.v1.HeartbeatRequest
+	23, // 44: hearth.v1.Coordinator.CompleteJob:input_type -> hearth.v1.CompleteJobRequest
+	25, // 45: hearth.v1.Coordinator.FailJob:input_type -> hearth.v1.FailJobRequest
+	27, // 46: hearth.v1.Coordinator.PutBlob:input_type -> hearth.v1.PutBlobRequest
+	30, // 47: hearth.v1.Coordinator.GetBlob:input_type -> hearth.v1.GetBlobRequest
+	32, // 48: hearth.v1.Coordinator.HasBlob:input_type -> hearth.v1.HasBlobRequest
+	34, // 49: hearth.v1.Coordinator.ListNodes:input_type -> hearth.v1.ListNodesRequest
+	10, // 50: hearth.v1.Coordinator.SubmitJob:output_type -> hearth.v1.SubmitJobResponse
+	7,  // 51: hearth.v1.Coordinator.GetJob:output_type -> hearth.v1.Job
+	13, // 52: hearth.v1.Coordinator.ListJobs:output_type -> hearth.v1.ListJobsResponse
+	15, // 53: hearth.v1.Coordinator.CancelJob:output_type -> hearth.v1.CancelJobResponse
+	7,  // 54: hearth.v1.Coordinator.WatchJob:output_type -> hearth.v1.Job
+	18, // 55: hearth.v1.Coordinator.RegisterWorker:output_type -> hearth.v1.RegisterWorkerResponse
+	20, // 56: hearth.v1.Coordinator.LeaseJob:output_type -> hearth.v1.LeaseJobResponse
+	22, // 57: hearth.v1.Coordinator.Heartbeat:output_type -> hearth.v1.HeartbeatResponse
+	24, // 58: hearth.v1.Coordinator.CompleteJob:output_type -> hearth.v1.CompleteJobResponse
+	26, // 59: hearth.v1.Coordinator.FailJob:output_type -> hearth.v1.FailJobResponse
+	29, // 60: hearth.v1.Coordinator.PutBlob:output_type -> hearth.v1.PutBlobResponse
+	31, // 61: hearth.v1.Coordinator.GetBlob:output_type -> hearth.v1.GetBlobResponse
+	33, // 62: hearth.v1.Coordinator.HasBlob:output_type -> hearth.v1.HasBlobResponse
+	35, // 63: hearth.v1.Coordinator.ListNodes:output_type -> hearth.v1.ListNodesResponse
+	50, // [50:64] is the sub-list for method output_type
+	36, // [36:50] is the sub-list for method input_type
+	36, // [36:36] is the sub-list for extension type_name
+	36, // [36:36] is the sub-list for extension extendee
+	0,  // [0:36] is the sub-list for field type_name
 }
 
 func init() { file_hearth_v1_hearth_proto_init() }
@@ -2193,7 +2285,7 @@ func file_hearth_v1_hearth_proto_init() {
 	if File_hearth_v1_hearth_proto != nil {
 		return
 	}
-	file_hearth_v1_hearth_proto_msgTypes[25].OneofWrappers = []any{
+	file_hearth_v1_hearth_proto_msgTypes[26].OneofWrappers = []any{
 		(*PutBlobRequest_Header)(nil),
 		(*PutBlobRequest_Chunk)(nil),
 	}
@@ -2203,7 +2295,7 @@ func file_hearth_v1_hearth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hearth_v1_hearth_proto_rawDesc), len(file_hearth_v1_hearth_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   34,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

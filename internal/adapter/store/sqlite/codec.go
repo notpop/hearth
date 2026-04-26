@@ -68,7 +68,11 @@ type jobRow struct {
 	ResultPayload                                                       []byte
 	ResultBlobsJSON                                                     sql.NullString
 	LastError                                                           sql.NullString
-	NextRunAtNs, CreatedAtNs, UpdatedAtNs                               int64
+	NextRunAtNs                                                         int64
+	ProgressPercent                                                     sql.NullFloat64
+	ProgressMessage                                                     sql.NullString
+	ProgressReportedAtNs                                                sql.NullInt64
+	CreatedAtNs, UpdatedAtNs                                            int64
 }
 
 const selectJobCols = `
@@ -76,7 +80,9 @@ id, kind, state, attempt, max_attempts, payload, blobs_json,
 lease_ttl_ns, backoff_initial_ns, backoff_max_ns, backoff_multiplier, backoff_jitter,
 worker_id, leased_at_ns, expires_at_ns,
 result_payload, result_blobs_json,
-last_error, next_run_at_ns, created_at_ns, updated_at_ns
+last_error, next_run_at_ns,
+progress_percent, progress_message, progress_reported_at_ns,
+created_at_ns, updated_at_ns
 `
 
 func scanJob(scanner interface {
@@ -88,7 +94,9 @@ func scanJob(scanner interface {
 		&r.LeaseTTLNs, &r.BackoffInitialNs, &r.BackoffMaxNs, &r.BackoffMultiplier, &r.BackoffJitter,
 		&r.WorkerID, &r.LeasedAtNs, &r.ExpiresAtNs,
 		&r.ResultPayload, &r.ResultBlobsJSON,
-		&r.LastError, &r.NextRunAtNs, &r.CreatedAtNs, &r.UpdatedAtNs,
+		&r.LastError, &r.NextRunAtNs,
+		&r.ProgressPercent, &r.ProgressMessage, &r.ProgressReportedAtNs,
+		&r.CreatedAtNs, &r.UpdatedAtNs,
 	)
 	if err != nil {
 		return job.Job{}, err
@@ -136,6 +144,13 @@ func scanJob(scanner interface {
 
 	if len(r.ResultPayload) > 0 || len(resBlobs) > 0 {
 		j.Result = &job.Result{Payload: r.ResultPayload, Blobs: resBlobs}
+	}
+	if r.ProgressPercent.Valid || r.ProgressMessage.Valid {
+		j.Progress = &job.Progress{
+			Percent:    r.ProgressPercent.Float64,
+			Message:    nullStr(r.ProgressMessage),
+			ReportedAt: nsTime(r.ProgressReportedAtNs.Int64),
+		}
 	}
 	return j, nil
 }
