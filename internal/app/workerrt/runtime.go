@@ -112,9 +112,21 @@ func New(opt Options) *Runtime {
 }
 
 // Run drives the lease/dispatch loop until ctx is done. Returns ctx.Err()
-// on shutdown. Transient lease errors are logged and retried with a small
-// delay; the loop only exits on context cancellation.
+// on shutdown.
+//
+// Reconnection semantics: if Lease errors (coordinator unreachable, network
+// partition, etc.) the loop sleeps for an exponentially-growing backoff
+// capped at reconnectMax, then retries. The backoff resets to
+// reconnectInitial on the first successful Lease (whether it returned a
+// job or not). This gives the worker the "set and forget" property — a
+// coordinator restart is just a long Lease error followed by reconnection.
+const (
+	reconnectInitial = time.Second
+	reconnectMax     = 30 * time.Second
+)
+
 func (r *Runtime) Run(ctx context.Context) error {
+	backoff := reconnectInitial
 	for {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -122,12 +134,18 @@ func (r *Runtime) Run(ctx context.Context) error {
 
 		j, ok, err := r.client.Lease(ctx, r.kinds, r.workerID, r.leaseTTL, r.pollTimeout)
 		if err != nil {
-			r.log.Error("lease", "err", err)
-			if !sleepCtx(ctx, time.Second) {
+			r.log.Warn("lease error, backing off", "err", err, "delay", backoff)
+			if !sleepCtx(ctx, backoff) {
 				return ctx.Err()
+			}
+			backoff *= 2
+			if backoff > reconnectMax {
+				backoff = reconnectMax
 			}
 			continue
 		}
+		// Successful round-trip — reset backoff.
+		backoff = reconnectInitial
 		if !ok {
 			continue
 		}

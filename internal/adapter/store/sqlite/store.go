@@ -329,6 +329,32 @@ func (s *Store) ReclaimExpired(ctx context.Context, now time.Time) (int, error) 
 	return len(toUpdate), nil
 }
 
+// Cancel transitions a non-terminal job to Cancelled.
+func (s *Store) Cancel(ctx context.Context, id job.ID, now time.Time) error {
+	r, err := s.db.ExecContext(ctx, `
+		UPDATE jobs SET state = ?, worker_id = NULL, leased_at_ns = NULL,
+		    expires_at_ns = NULL, updated_at_ns = ?
+		 WHERE id = ? AND state IN (?, ?)`,
+		int64(job.StateCancelled), timeNs(now),
+		string(id), int64(job.StateQueued), int64(job.StateLeased),
+	)
+	if err != nil {
+		return err
+	}
+	n, err := r.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		// Either id is unknown, or state is already terminal.
+		if _, gerr := s.Get(ctx, id); errors.Is(gerr, ErrNotFound) {
+			return ErrNotFound
+		}
+		return jobsm.ErrInvalidTransition
+	}
+	return nil
+}
+
 // List returns jobs matching filter, newest UpdatedAt first.
 func (s *Store) List(ctx context.Context, filter app.ListFilter) ([]job.Job, error) {
 	conds := []string{}

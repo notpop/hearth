@@ -211,13 +211,38 @@ protoc --proto_path=api/proto \
 
 See *Architecture* above. In one paragraph: `pkg/` is the public surface; `internal/domain/` is pure logic; `internal/app/` is orchestration; `internal/adapter/` is I/O; `cmd/` is glue; `examples/` shows users how to plug in handlers.
 
-## Roadmap (not yet implemented)
+## CLI reference
 
-- [ ] `CancelJob` end-to-end (server side returns Unimplemented today)
-- [ ] `WatchJob` push notifications (currently a server-side poll)
-- [ ] CLI `submit` with blob inputs (`--blob <path>`)
-- [ ] Worker auto-reconnect with exponential backoff
-- [ ] Multi-coordinator HA (single coordinator today; LAN scale rarely needs it)
+```
+hearth coordinator [--listen ...] [--data ...] [--ca ...] [--mdns]
+hearth enroll [--addr <host:port>] [--out <path>] [--validity <dur>] <name>
+hearth submit  [--bundle <path>] [--coordinator <addr>] --kind <k> [--payload <s>] [--blob <path> ...]
+hearth status  [--bundle <path>] [--coordinator <addr>] [--job <id>] [--watch] [--limit N]
+hearth cancel  [--bundle <path>] [--coordinator <addr>] <job-id>
+hearth nodes   [--bundle <path>] [--coordinator <addr>]
+hearth ca      init [--dir <path>] [--name <cn>]
+hearth worker  --bundle <path>     # OSS binary, no handlers — for connectivity tests
+hearth version
+```
+
+## Roadmap
+
+Done in 0.1.x:
+
+- [x] mTLS-by-default with self-rooted CA
+- [x] Single-file worker enrollment (`.hearth` bundle)
+- [x] mDNS auto-discovery (`_hearth._tcp.local`)
+- [x] SQLite WAL durable queue + filesystem CAS blob store
+- [x] Coordinator auto-bootstrap (zero-config first run)
+- [x] CLI auto-discovers admin bundle (no `--bundle` on coord host)
+- [x] CLI `--blob` for input file uploads
+- [x] CancelJob end-to-end (`hearth cancel <id>`)
+- [x] WatchJob push notifications (in-memory pub/sub)
+- [x] Worker auto-reconnect with exponential backoff
+
+Not on the roadmap:
+
+- Multi-coordinator HA — home-scale doesn't need it; SQLite WAL means a coordinator restart loses no committed work, and only one host is "always on" anyway. SPOF is acceptable.
 
 ## License
 

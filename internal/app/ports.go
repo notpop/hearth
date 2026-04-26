@@ -57,6 +57,11 @@ type Store interface {
 	// number of jobs reclaimed.
 	ReclaimExpired(ctx context.Context, now time.Time) (int, error)
 
+	// Cancel transitions any non-terminal job to Cancelled. If the job is
+	// currently Leased, the lease is cleared so the holding worker's next
+	// Heartbeat reveals the cancellation.
+	Cancel(ctx context.Context, id job.ID, now time.Time) error
+
 	// List returns jobs matching filter, newest first.
 	List(ctx context.Context, filter ListFilter) ([]job.Job, error)
 

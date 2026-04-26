@@ -44,6 +44,7 @@ type Coordinator struct {
 	log          *slog.Logger
 	reclaimEvery time.Duration
 	pollTick     time.Duration
+	pub          *publisher
 }
 
 // New constructs a Coordinator from opt, applying defaults as needed.
@@ -77,7 +78,26 @@ func New(opt Options) *Coordinator {
 		log:          opt.Logger,
 		reclaimEvery: opt.ReclaimEvery,
 		pollTick:     opt.PollTick,
+		pub:          newPublisher(),
 	}
+}
+
+// Watch registers a subscription for state changes to job id. Callers MUST
+// call Unsubscribe on the returned Subscription to release resources. The
+// channel is closed on Unsubscribe.
+func (c *Coordinator) Watch(id job.ID) *Subscription {
+	return c.pub.Subscribe(id)
+}
+
+// publishCurrent fetches the latest version of id from the store and
+// publishes it. Used after writes that don't already have the post-state
+// in hand.
+func (c *Coordinator) publishCurrent(ctx context.Context, id job.ID) {
+	j, err := c.store.Get(ctx, id)
+	if err != nil {
+		return
+	}
+	c.pub.Publish(j)
 }
 
 // Submit enqueues a fresh job described by spec and returns its id.
@@ -102,6 +122,7 @@ func (c *Coordinator) Submit(ctx context.Context, spec job.Spec) (job.ID, error)
 	if err := c.store.Enqueue(ctx, j); err != nil {
 		return "", err
 	}
+	c.pub.Publish(j)
 	return j.ID, nil
 }
 
@@ -130,6 +151,7 @@ func (c *Coordinator) Lease(ctx context.Context, kinds []string, workerID string
 			return job.Job{}, false, err
 		}
 		if ok {
+			c.pub.Publish(j)
 			return j, true, nil
 		}
 		if pollTimeout <= 0 || !c.clock.Now().Before(deadline) {
@@ -144,24 +166,47 @@ func (c *Coordinator) Lease(ctx context.Context, kinds []string, workerID string
 }
 
 // Heartbeat extends the lease on (id, workerID) using the spec's LeaseTTL.
-func (c *Coordinator) Heartbeat(ctx context.Context, id job.ID, workerID string) (time.Time, error) {
-	j, err := c.store.Get(ctx, id)
-	if err != nil {
-		return time.Time{}, err
+//
+// If the job is in a terminal state — including Cancelled, which is the
+// signal a worker uses to abandon a leased job — Heartbeat returns
+// (zeroTime, true, nil). Workers should treat cancelRequested=true as
+// "stop running this job, the coordinator no longer wants the result."
+func (c *Coordinator) Heartbeat(ctx context.Context, id job.ID, workerID string) (expires time.Time, cancelRequested bool, err error) {
+	j, gerr := c.store.Get(ctx, id)
+	if gerr != nil {
+		return time.Time{}, false, gerr
+	}
+	if j.State.IsTerminal() {
+		return time.Time{}, true, nil
 	}
 	if j.State != job.StateLeased || j.Lease == nil {
-		return time.Time{}, jobsm.ErrInvalidTransition
+		return time.Time{}, false, jobsm.ErrInvalidTransition
 	}
-	expires := c.clock.Now().Add(j.Spec.LeaseTTL)
-	if err := c.store.Heartbeat(ctx, id, workerID, expires); err != nil {
-		return time.Time{}, err
+	exp := c.clock.Now().Add(j.Spec.LeaseTTL)
+	if err := c.store.Heartbeat(ctx, id, workerID, exp); err != nil {
+		return time.Time{}, false, err
 	}
-	return expires, nil
+	return exp, false, nil
+}
+
+// Cancel transitions the job to Cancelled, regardless of whether it was
+// queued or leased. The current lease holder (if any) discovers this on
+// its next Heartbeat (cancelRequested=true) and unwinds.
+func (c *Coordinator) Cancel(ctx context.Context, id job.ID) error {
+	if err := c.store.Cancel(ctx, id, c.clock.Now()); err != nil {
+		return err
+	}
+	c.publishCurrent(ctx, id)
+	return nil
 }
 
 // Complete marks the job Succeeded with res.
 func (c *Coordinator) Complete(ctx context.Context, id job.ID, workerID string, res job.Result) error {
-	return c.store.Complete(ctx, id, workerID, res, c.clock.Now())
+	if err := c.store.Complete(ctx, id, workerID, res, c.clock.Now()); err != nil {
+		return err
+	}
+	c.publishCurrent(ctx, id)
+	return nil
 }
 
 // Fail records a failed attempt and applies the configured backoff/retry
@@ -184,6 +229,7 @@ func (c *Coordinator) Fail(ctx context.Context, id job.ID, workerID string, errM
 	if err := c.store.Fail(ctx, id, workerID, errMsg, nextState, retryAt, now); err != nil {
 		return false, time.Time{}, err
 	}
+	c.publishCurrent(ctx, id)
 	return nextState == job.StateQueued, retryAt, nil
 }
 

@@ -171,6 +171,22 @@ func (s *Store) ReclaimExpired(_ context.Context, now time.Time) (int, error) {
 	return n, nil
 }
 
+// Cancel transitions a non-terminal job to Cancelled.
+func (s *Store) Cancel(_ context.Context, id job.ID, now time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	j, ok := s.jobs[id]
+	if !ok {
+		return ErrNotFound
+	}
+	out, err := jobsm.Cancel(j, now)
+	if err != nil {
+		return err
+	}
+	s.jobs[id] = out
+	return nil
+}
+
 // List returns jobs matching filter, sorted newest-first by UpdatedAt.
 func (s *Store) List(_ context.Context, filter app.ListFilter) ([]job.Job, error) {
 	s.mu.Lock()

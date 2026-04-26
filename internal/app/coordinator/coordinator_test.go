@@ -91,9 +91,12 @@ func TestHeartbeatExtendsExpiry(t *testing.T) {
 	leased, _, _ := h.coord.Lease(context.Background(), []string{"k"}, "w1", 10*time.Second, 0)
 
 	h.clock.Advance(3 * time.Second)
-	expires, err := h.coord.Heartbeat(context.Background(), leased.ID, "w1")
+	expires, cancel, err := h.coord.Heartbeat(context.Background(), leased.ID, "w1")
 	if err != nil {
 		t.Fatalf("Heartbeat: %v", err)
+	}
+	if cancel {
+		t.Errorf("cancel should be false for healthy lease")
 	}
 	want := h.clock.Now().Add(10 * time.Second)
 	if !expires.Equal(want) {

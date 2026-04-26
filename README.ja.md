@@ -214,13 +214,38 @@ protoc --proto_path=api/proto \
 
 上記アーキテクチャ図参照。一行で言うと: `pkg/` が公開、`internal/domain/` が pure ロジック、`internal/app/` がオーケストレーション、`internal/adapter/` が I/O、`cmd/` が結線、`examples/` が利用例。
 
-## ロードマップ(未実装)
+## CLI リファレンス
 
-- [ ] `CancelJob` のエンドツーエンド実装(現在 server 側は Unimplemented)
-- [ ] `WatchJob` の push 通知(現在は server 側 poll)
-- [ ] CLI `submit` での blob 入力(`--blob <path>`)
-- [ ] worker の自動再接続(指数 backoff)
-- [ ] Coordinator HA(現状は単一 coordinator、家庭規模では十分)
+```
+hearth coordinator [--listen ...] [--data ...] [--ca ...] [--mdns]
+hearth enroll [--addr <host:port>] [--out <path>] [--validity <dur>] <name>
+hearth submit  [--bundle <path>] [--coordinator <addr>] --kind <k> [--payload <s>] [--blob <path> ...]
+hearth status  [--bundle <path>] [--coordinator <addr>] [--job <id>] [--watch] [--limit N]
+hearth cancel  [--bundle <path>] [--coordinator <addr>] <job-id>
+hearth nodes   [--bundle <path>] [--coordinator <addr>]
+hearth ca      init [--dir <path>] [--name <cn>]
+hearth worker  --bundle <path>     # OSS バイナリ、handler なし — 接続確認用
+hearth version
+```
+
+## ロードマップ
+
+0.1.x で完了:
+
+- [x] mTLS デフォルト(自前 CA)
+- [x] ワーカー登録は1ファイル(`.hearth` バンドル)
+- [x] mDNS 自動発見(`_hearth._tcp.local`)
+- [x] SQLite WAL 永続キュー + ファイルシステム CAS blob ストア
+- [x] Coordinator 自動初期化(初回起動はゼロ設定)
+- [x] CLI が admin バンドルを自動発見(coord ホスト上では `--bundle` 不要)
+- [x] CLI `--blob` でファイル入力アップロード
+- [x] CancelJob のエンドツーエンド実装(`hearth cancel <id>`)
+- [x] WatchJob push 通知(in-memory pub/sub)
+- [x] worker の自動再接続(指数 backoff)
+
+ロードマップから外したもの:
+
+- Coordinator HA — 家庭規模では不要。SQLite WAL のおかげで coordinator 再起動でデータは失われず、常時稼働マシンも基本1台。SPOF は許容範囲。
 
 ## ライセンス
 

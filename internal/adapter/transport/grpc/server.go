@@ -108,6 +108,13 @@ func (s *Server) ListJobs(ctx context.Context, req *hearthv1.ListJobsRequest) (*
 
 func (s *Server) WatchJob(req *hearthv1.WatchJobRequest, stream hearthv1.Coordinator_WatchJobServer) error {
 	id := job.ID(req.GetId())
+
+	// Subscribe FIRST so we don't miss the very next transition between
+	// the initial snapshot and entering the receive loop. Duplicates are
+	// fine — the consumer just re-renders the same state.
+	sub := s.coord.Watch(id)
+	defer sub.Unsubscribe()
+
 	j, err := s.coord.Get(stream.Context(), id)
 	if err != nil {
 		return status.Errorf(codes.NotFound, "%v", err)
@@ -118,26 +125,19 @@ func (s *Server) WatchJob(req *hearthv1.WatchJobRequest, stream hearthv1.Coordin
 	if j.State.IsTerminal() {
 		return nil
 	}
-	last := j.UpdatedAt
 
-	t := time.NewTicker(s.watchPoll)
-	defer t.Stop()
 	for {
 		select {
 		case <-stream.Context().Done():
 			return stream.Context().Err()
-		case <-t.C:
-			cur, err := s.coord.Get(stream.Context(), id)
-			if err != nil {
-				return status.Errorf(codes.NotFound, "%v", err)
+		case upd, ok := <-sub.Updates():
+			if !ok {
+				return nil
 			}
-			if !cur.UpdatedAt.Equal(last) {
-				if err := stream.Send(wire.JobToProto(cur)); err != nil {
-					return err
-				}
-				last = cur.UpdatedAt
+			if err := stream.Send(wire.JobToProto(upd)); err != nil {
+				return err
 			}
-			if cur.State.IsTerminal() {
+			if upd.State.IsTerminal() {
 				return nil
 			}
 		}
@@ -173,11 +173,15 @@ func (s *Server) LeaseJob(ctx context.Context, req *hearthv1.LeaseJobRequest) (*
 }
 
 func (s *Server) Heartbeat(ctx context.Context, req *hearthv1.HeartbeatRequest) (*hearthv1.HeartbeatResponse, error) {
-	expires, err := s.coord.Heartbeat(ctx, job.ID(req.GetJobId()), req.GetWorkerId())
+	expires, cancel, err := s.coord.Heartbeat(ctx, job.ID(req.GetJobId()), req.GetWorkerId())
 	if err != nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "%v", err)
 	}
-	return &hearthv1.HeartbeatResponse{ExpiresAt: timestamppb.New(expires), Cancel: false}, nil
+	resp := &hearthv1.HeartbeatResponse{Cancel: cancel}
+	if !expires.IsZero() {
+		resp.ExpiresAt = timestamppb.New(expires)
+	}
+	return resp, nil
 }
 
 func (s *Server) CompleteJob(ctx context.Context, req *hearthv1.CompleteJobRequest) (*hearthv1.CompleteJobResponse, error) {
@@ -270,6 +274,13 @@ func (s *Server) HasBlob(ctx context.Context, req *hearthv1.HasBlobRequest) (*he
 		return nil, status.Errorf(codes.Internal, "%v", err)
 	}
 	return &hearthv1.HasBlobResponse{Present: ok}, nil
+}
+
+func (s *Server) CancelJob(ctx context.Context, req *hearthv1.CancelJobRequest) (*hearthv1.CancelJobResponse, error) {
+	if err := s.coord.Cancel(ctx, job.ID(req.GetId())); err != nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "%v", err)
+	}
+	return &hearthv1.CancelJobResponse{}, nil
 }
 
 // --- Admin --------------------------------------------------------------

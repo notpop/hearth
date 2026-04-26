@@ -166,6 +166,11 @@ func (c *Client) GetJob(ctx context.Context, id job.ID) (job.Job, error) {
 	return wire.JobFromProto(p), nil
 }
 
+func (c *Client) CancelJob(ctx context.Context, id job.ID) error {
+	_, err := c.rpc.CancelJob(ctx, &hearthv1.CancelJobRequest{Id: string(id)})
+	return err
+}
+
 func (c *Client) ListJobs(ctx context.Context, filter app.ListFilter) ([]job.Job, error) {
 	states := make([]hearthv1.State, 0, len(filter.States))
 	for _, st := range filter.States {

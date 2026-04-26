@@ -29,6 +29,9 @@ func RunSuite(t *testing.T, f Factory) {
 	t.Run("FailRequeues", func(t *testing.T) { testFailRequeues(t, f) })
 	t.Run("ReclaimExpired", func(t *testing.T) { testReclaimExpired(t, f) })
 	t.Run("List", func(t *testing.T) { testList(t, f) })
+	t.Run("CancelQueued", func(t *testing.T) { testCancelQueued(t, f) })
+	t.Run("CancelLeased", func(t *testing.T) { testCancelLeased(t, f) })
+	t.Run("CancelTerminalIsError", func(t *testing.T) { testCancelTerminalIsError(t, f) })
 }
 
 func mustEnqueue(t *testing.T, s app.Store, id job.ID, kind string, now time.Time) job.Job {
@@ -195,6 +198,52 @@ func testReclaimExpired(t *testing.T, f Factory) {
 	got, _ := s.Get(context.Background(), "j1")
 	if got.State != job.StateQueued {
 		t.Errorf("state after reclaim = %v", got.State)
+	}
+}
+
+func testCancelQueued(t *testing.T, f Factory) {
+	s := f(t)
+	now := time.Now()
+	mustEnqueue(t, s, "j1", "k", now)
+
+	if err := s.Cancel(context.Background(), "j1", now); err != nil {
+		t.Fatalf("Cancel: %v", err)
+	}
+	got, _ := s.Get(context.Background(), "j1")
+	if got.State != job.StateCancelled {
+		t.Errorf("state = %v, want cancelled", got.State)
+	}
+}
+
+func testCancelLeased(t *testing.T, f Factory) {
+	s := f(t)
+	now := time.Now()
+	mustEnqueue(t, s, "j1", "k", now)
+	_, _, _ = s.LeaseNext(context.Background(), []string{"k"}, "w1", 30*time.Second, now)
+
+	if err := s.Cancel(context.Background(), "j1", now); err != nil {
+		t.Fatalf("Cancel: %v", err)
+	}
+	got, _ := s.Get(context.Background(), "j1")
+	if got.State != job.StateCancelled {
+		t.Errorf("state = %v, want cancelled", got.State)
+	}
+	if got.Lease != nil {
+		t.Errorf("lease should be cleared")
+	}
+}
+
+func testCancelTerminalIsError(t *testing.T, f Factory) {
+	s := f(t)
+	now := time.Now()
+	mustEnqueue(t, s, "j1", "k", now)
+	leased, _, _ := s.LeaseNext(context.Background(), []string{"k"}, "w1", 30*time.Second, now)
+	if err := s.Complete(context.Background(), leased.ID, "w1", job.Result{}, now); err != nil {
+		t.Fatalf("Complete: %v", err)
+	}
+
+	if err := s.Cancel(context.Background(), "j1", now); err == nil {
+		t.Errorf("Cancel of terminal job should error")
 	}
 }
 

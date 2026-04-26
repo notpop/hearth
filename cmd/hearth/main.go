@@ -24,6 +24,7 @@ func main() {
 		{"coordinator", "run the coordinator (queue + scheduler)", runCoordinator},
 		{"worker", "run a worker that pulls and executes jobs", runWorker},
 		{"submit", "submit a job to the coordinator", runSubmit},
+		{"cancel", "cancel a job", runCancel},
 		{"status", "show job status", runStatus},
 		{"nodes", "list connected workers", runNodes},
 		{"ca", "manage the Hearth CA (init)", runCA},

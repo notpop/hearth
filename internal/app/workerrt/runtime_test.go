@@ -28,8 +28,7 @@ func (c *inProcessClient) Lease(ctx context.Context, kinds []string, workerID st
 	return c.c.Lease(ctx, kinds, workerID, ttl, pollTimeout)
 }
 func (c *inProcessClient) Heartbeat(ctx context.Context, id job.ID, workerID string) (time.Time, bool, error) {
-	exp, err := c.c.Heartbeat(ctx, id, workerID)
-	return exp, false, err
+	return c.c.Heartbeat(ctx, id, workerID)
 }
 func (c *inProcessClient) Complete(ctx context.Context, id job.ID, workerID string, res job.Result) error {
 	return c.c.Complete(ctx, id, workerID, res)
