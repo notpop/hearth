@@ -158,8 +158,21 @@ func (r *Runtime) Run(ctx context.Context) error {
 }
 
 func (r *Runtime) runOne(parent context.Context, j job.Job) {
+	r.log.Info("task received",
+		"event", "task.received",
+		"worker", r.workerID,
+		"job", j.ID,
+		"kind", j.Spec.Kind,
+		"attempt", j.Attempt)
+
 	h, ok := r.handlers[j.Spec.Kind]
 	if !ok {
+		r.log.Error("no handler for kind",
+			"event", "task.failed",
+			"worker", r.workerID,
+			"job", j.ID,
+			"kind", j.Spec.Kind,
+			"reason", "no_handler")
 		_ = r.client.Fail(parent, j.ID, r.workerID,
 			fmt.Sprintf("worker has no handler for kind %q", j.Spec.Kind))
 		return
@@ -182,11 +195,26 @@ func (r *Runtime) runOne(parent context.Context, j job.Job) {
 		Report:  tracker.report,
 	}
 
+	r.log.Info("task started",
+		"event", "task.started",
+		"worker", r.workerID,
+		"job", j.ID,
+		"kind", j.Spec.Kind)
+
+	startedAt := r.clock.Now()
 	out, herr := h.Handle(jobCtx, in)
 	cancel()
 	<-hbDone
+	elapsed := r.clock.Now().Sub(startedAt)
 
 	if herr != nil {
+		r.log.Warn("task failed",
+			"event", "task.failed",
+			"worker", r.workerID,
+			"job", j.ID,
+			"kind", j.Spec.Kind,
+			"err", herr.Error(),
+			"elapsed", elapsed)
 		if perr := r.client.Fail(parent, j.ID, r.workerID, herr.Error()); perr != nil {
 			r.log.Error("report fail", "id", j.ID, "err", perr)
 		}
@@ -195,6 +223,13 @@ func (r *Runtime) runOne(parent context.Context, j job.Job) {
 
 	res, perr := r.persistOutput(parent, out)
 	if perr != nil {
+		r.log.Warn("task failed (output persist)",
+			"event", "task.failed",
+			"worker", r.workerID,
+			"job", j.ID,
+			"kind", j.Spec.Kind,
+			"err", perr.Error(),
+			"elapsed", elapsed)
 		if ferr := r.client.Fail(parent, j.ID, r.workerID, "persist output: "+perr.Error()); ferr != nil {
 			r.log.Error("report fail (persist)", "id", j.ID, "err", ferr)
 		}
@@ -203,6 +238,12 @@ func (r *Runtime) runOne(parent context.Context, j job.Job) {
 	if cerr := r.client.Complete(parent, j.ID, r.workerID, res); cerr != nil {
 		r.log.Error("report complete", "id", j.ID, "err", cerr)
 	}
+	r.log.Info("task done",
+		"event", "task.done",
+		"worker", r.workerID,
+		"job", j.ID,
+		"kind", j.Spec.Kind,
+		"elapsed", elapsed)
 }
 
 // heartbeat keeps the lease alive while the handler runs and piggybacks

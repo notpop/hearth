@@ -138,6 +138,10 @@ func (c *Coordinator) Submit(ctx context.Context, spec job.Spec) (job.ID, error)
 	if err := c.store.Enqueue(ctx, j); err != nil {
 		return "", err
 	}
+	c.log.Info("job submitted",
+		"event", "job.submitted",
+		"job", j.ID,
+		"kind", spec.Kind)
 	c.pub.Publish(j)
 	return j.ID, nil
 }
@@ -167,6 +171,12 @@ func (c *Coordinator) Lease(ctx context.Context, kinds []string, workerID string
 			return job.Job{}, false, err
 		}
 		if ok {
+			c.log.Info("lease granted",
+				"event", "lease.granted",
+				"job", j.ID,
+				"kind", j.Spec.Kind,
+				"worker", workerID,
+				"attempt", j.Attempt)
 			c.pub.Publish(j)
 			return j, true, nil
 		}
@@ -225,6 +235,9 @@ func (c *Coordinator) Cancel(ctx context.Context, id job.ID) error {
 	if err := c.store.Cancel(ctx, id, c.clock.Now()); err != nil {
 		return err
 	}
+	c.log.Info("job cancelled",
+		"event", "job.cancelled",
+		"job", id)
 	c.publishCurrent(ctx, id)
 	return nil
 }
@@ -234,6 +247,11 @@ func (c *Coordinator) Complete(ctx context.Context, id job.ID, workerID string, 
 	if err := c.store.Complete(ctx, id, workerID, res, c.clock.Now()); err != nil {
 		return err
 	}
+	c.log.Info("job complete",
+		"event", "job.complete",
+		"job", id,
+		"worker", workerID,
+		"output_blobs", len(res.Blobs))
 	c.publishCurrent(ctx, id)
 	return nil
 }
@@ -258,6 +276,13 @@ func (c *Coordinator) Fail(ctx context.Context, id job.ID, workerID string, errM
 	if err := c.store.Fail(ctx, id, workerID, errMsg, nextState, retryAt, now); err != nil {
 		return false, time.Time{}, err
 	}
+	c.log.Info("job failed",
+		"event", "job.failed",
+		"job", id,
+		"worker", workerID,
+		"err", errMsg,
+		"will_retry", nextState == job.StateQueued,
+		"next_run_at", retryAt)
 	c.publishCurrent(ctx, id)
 	return nextState == job.StateQueued, retryAt, nil
 }

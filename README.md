@@ -120,11 +120,34 @@ A typical home router bridges WiFi and Ethernet at L2, so a Mac on WiFi and a PC
 
 ## Development
 
+Tasks are exposed as Nix flake apps. Run them with `nix run .#<name>`:
+
 ```sh
-nix develop          # Go 1.26 + tooling pinned in flake.nix
-just                 # list tasks
-just test            # run suite (~10 s)
-just build           # ./bin/hearth
+nix run .#build              # ./bin/hearth
+nix run .#test               # full suite (~10 s)
+nix run .#test-race
+nix run .#cover              # per-package coverage
+nix run .#vet
+nix run .#lint               # vet + staticcheck
+nix run .#proto              # regenerate gRPC stubs
+nix run .#release-build -- v0.2.1-alpha
+```
+
+CLI wrappers (build first, then run):
+
+```sh
+nix run .#ca-init                                       # hearth ca init
+nix run .#enroll -- --addr <ip>:7843 my-worker          # hearth enroll
+nix run .#coordinator                                   # hearth coordinator
+```
+
+For an interactive shell with all tooling on `$PATH`, `nix develop` (Go 1.26, gopls, golangci-lint, sqlite, protoc, ...).
+
+Other Nix flakes can consume Hearth as a build input:
+
+```nix
+inputs.hearth.url = "github:notpop/hearth";
+# then in your devShell: hearth.packages.${system}.default
 ```
 
 `pkg/` is the public API surface. Everything else lives under `internal/` and may change.
