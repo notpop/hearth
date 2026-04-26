@@ -35,73 +35,57 @@ Hearth は、家にある複数台の PC(Mac, Windows, Linux, NAS など)に CPU
 
 ## クイックスタート
 
-前提: Go ≥ 1.26 (or 後述の `nix develop`)。
+前提: Go ≥ 1.26(または後述の `nix develop`)。あるいは [latest release](https://github.com/notpop/hearth/releases) からビルド済バイナリをダウンロード。
 
-### 1. バイナリをビルド
-
-```bash
-go build ./cmd/hearth
-```
-
-`./hearth` ができます。これをすべてのホスト(coordinator / worker / CLI)にコピーする。
-
-### 2. CA を初期化(coordinator ホストで一度だけ)
+### 常時稼働ホストで(1コマンド)
 
 ```bash
-./hearth ca init
-# Hearth CA initialised at /home/you/.hearth/ca
-#   CN     = hearth-home-ca
-#   expires = 2036-...
+hearth coordinator
 ```
 
-### 3. ワーカーごとに enrollment bundle を発行(あなた自身が CLI を使うなら admin 用にも1個)
+初回実行で CA・サーバ証明書・ローカル admin bundle を自動生成し、gRPC サーバを起動。再実行時は既存のものを使い回します。
+
+### 同じホストからジョブを投入
 
 ```bash
-./hearth enroll --addr coordinator.local:7843 imac-2
-# Wrote enrollment bundle: imac-2.hearth
+hearth submit --kind echo --payload "hi"
+hearth status
 ```
 
-`imac-2.hearth` を USB / SD カード等で対象マシンに移動。
+CLI は `./.hearth/admin.hearth`(または `~/.hearth/admin.hearth`)を自動的に見つけるので、coordinator ホスト上では `--bundle` 指定不要。
 
-### 4. Coordinator を起動
+### 別マシンを worker として追加
+
+coordinator ホストで bundle を発行:
 
 ```bash
-./hearth coordinator --listen 0.0.0.0:7843 --data ./.hearth
-# hearth coordinator listening on 0.0.0.0:7843
-# mdns advertising as imac._hearth._tcp.local.
+hearth enroll --addr <coord-ip>:7843 my-laptop    # → my-laptop.hearth(~1 KB)
 ```
 
-### 5. ジョブを投入
+`my-laptop.hearth` を worker ホストへ運ぶ(USB / scp / SD カード、何でも)。
 
-```bash
-./hearth submit --bundle ./admin.hearth --kind echo --payload "hi"
-# 4b29b6cb0adaea7ce347367a5575486f
-./hearth status --bundle ./admin.hearth
-```
-
-### 6. Worker を起動
-
-OSS の `hearth worker --bundle ...` は接続テスト用で handler は登録されません。実処理を行うには独自 worker バイナリをビルドする必要があります(下記)。実装例は `examples/img2pdf/cmd/img2pdf-worker` にあります。
+worker ホストで `hearth worker --bundle my-laptop.hearth` を実行すれば接続できます ── ただし OSS バイナリは handler を持たないため、実処理を行うには `pkg/runner` を import した独自 worker バイナリをビルドしてください(下記)。
 
 ## 自分の worker をビルドする
 
-worker バイナリは ~30 行 + handler の実装で書けます。最小レシピ:
+外部プロジェクトが依存する公開 API は次の2パッケージのみ:
+
+- `github.com/notpop/hearth/pkg/worker` — `Handler` interface
+- `github.com/notpop/hearth/pkg/runner` — `RunWorker`(または細かい制御用の `Run`)
+
+最小実装は ~15 行:
 
 ```go
 package main
 
 import (
     "context"
+    "log"
     "os"
-    "runtime"
-    "strings"
-    "time"
+    "os/signal"
+    "syscall"
 
-    grpcadapter "github.com/notpop/hearth/internal/adapter/transport/grpc"
-    "github.com/notpop/hearth/internal/app"
-    "github.com/notpop/hearth/internal/app/workerrt"
-    "github.com/notpop/hearth/internal/security/bundle"
-    "github.com/notpop/hearth/internal/security/pki"
+    "github.com/notpop/hearth/pkg/runner"
     "github.com/notpop/hearth/pkg/worker"
 )
 
@@ -117,31 +101,21 @@ func (myHandler) Handle(ctx context.Context, in worker.Input) (worker.Output, er
 }
 
 func main() {
-    b, _ := bundle.ReadFile(os.Args[1])
-    addr := b.Manifest.CoordinatorAddrs[0]
-    host := strings.SplitN(addr, ":", 2)[0]
+    if len(os.Args) != 2 {
+        log.Fatal("usage: my-worker <bundle.hearth>")
+    }
+    ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+    defer cancel()
 
-    tlsCfg, _ := pki.ClientTLSConfig(b.CACertPEM, b.ClientCertPEM, b.ClientKeyPEM, host)
-    client, _ := grpcadapter.Dial(context.Background(), addr, tlsCfg)
-    defer client.Close()
-
-    _, _ = client.RegisterWorker(context.Background(), app.WorkerInfo{
-        ID: b.Manifest.WorkerID, Hostname: hostname(), OS: runtime.GOOS, Arch: runtime.GOARCH,
-        Kinds: []string{"my-task"}, LastSeen: time.Now().UTC(),
-    })
-
-    rt := workerrt.New(workerrt.Options{
-        WorkerID: b.Manifest.WorkerID,
-        Handlers: []worker.Handler{myHandler{}},
-        Client:   client,
-    })
-    _ = rt.Run(context.Background())
+    if err := runner.RunWorker(ctx, os.Args[1], myHandler{}); err != nil {
+        log.Fatal(err)
+    }
 }
-
-func hostname() string { h, _ := os.Hostname(); return h }
 ```
 
-完成版は `examples/img2pdf/cmd/img2pdf-worker/main.go` を参照。
+`runner.RunWorker` がバンドル読み込み・mTLS で coordinator に dial・worker 登録・handler ループまで全部面倒見てくれます。詳細制御(ログ、複数 handler、アドレス上書きなど)が要るなら `runner.Run` + `runner.Options` を使ってください。
+
+完成版は `examples/img2pdf/cmd/img2pdf-worker/main.go`。
 
 ### Handler の契約
 

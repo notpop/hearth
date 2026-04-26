@@ -33,73 +33,57 @@ A typical home has 3–5 computers (Mac, Windows, Linux, NAS, …) and a single 
 
 ## Quick start
 
-Prerequisites: Go ≥ 1.26 (or use the bundled `nix develop` shell — see *Development* below).
+Prerequisites: Go ≥ 1.26 (or use the bundled `nix develop` shell — see *Development* below). Or grab a prebuilt binary from the [latest release](https://github.com/notpop/hearth/releases).
 
-### 1. Build the binary
-
-```bash
-go build ./cmd/hearth
-```
-
-You now have `./hearth` — copy it to any host that will run a coordinator, worker, or CLI.
-
-### 2. Initialise the CA (once, on the coordinator host)
+### On the always-on host (one command)
 
 ```bash
-./hearth ca init
-# Hearth CA initialised at /home/you/.hearth/ca
-#   CN     = hearth-home-ca
-#   expires = 2036-...
+hearth coordinator
 ```
 
-### 3. Issue an enrollment bundle for each worker (and for yourself, if you'll use the CLI)
+First run auto-creates the CA, server cert, and a local admin bundle, then starts the gRPC server. Subsequent runs reuse them.
+
+### Submit a job from the same host
 
 ```bash
-./hearth enroll --addr coordinator.local:7843 imac-2
-# Wrote enrollment bundle: imac-2.hearth
+hearth submit --kind echo --payload "hi"
+hearth status
 ```
 
-Move `imac-2.hearth` to that machine via USB, SD card, or whatever you trust.
+The CLI auto-discovers `./.hearth/admin.hearth` (or `~/.hearth/admin.hearth`) so no `--bundle` is needed when running on the coordinator host.
 
-### 4. Run the coordinator
+### Add a worker from another machine
+
+On the coordinator host, issue a bundle:
 
 ```bash
-./hearth coordinator --listen 0.0.0.0:7843 --data ./.hearth
-# hearth coordinator listening on 0.0.0.0:7843
-# mdns advertising as imac._hearth._tcp.local.
+hearth enroll --addr <coord-ip>:7843 my-laptop    # → my-laptop.hearth (~1 KB)
 ```
 
-### 5. Submit a job
+Move `my-laptop.hearth` to the worker host (USB, scp, SD card — your choice).
 
-```bash
-./hearth submit --bundle ./admin.hearth --kind echo --payload "hi"
-# 4b29b6cb0adaea7ce347367a5575486f
-./hearth status --bundle ./admin.hearth
-```
-
-### 6. Run a worker
-
-The OSS `hearth worker --bundle ...` command verifies connectivity but registers no handlers. To actually do work, you build your own worker binary — see *Building your own worker* below or the runnable example at `examples/img2pdf/cmd/img2pdf-worker`.
+That host can now connect to the coordinator (`hearth worker --bundle my-laptop.hearth`) but the OSS binary registers no handlers — to actually process jobs, build a worker binary that imports `pkg/runner` (see below).
 
 ## Building your own worker
 
-A worker binary is ~30 lines plus your handler. Minimal recipe:
+The OSS API surface external projects depend on is exactly two packages:
+
+- `github.com/notpop/hearth/pkg/worker` — the `Handler` interface
+- `github.com/notpop/hearth/pkg/runner` — `RunWorker` (or `Run` for more control)
+
+A complete worker is ~15 lines:
 
 ```go
 package main
 
 import (
     "context"
+    "log"
     "os"
-    "runtime"
-    "strings"
-    "time"
+    "os/signal"
+    "syscall"
 
-    grpcadapter "github.com/notpop/hearth/internal/adapter/transport/grpc"
-    "github.com/notpop/hearth/internal/app"
-    "github.com/notpop/hearth/internal/app/workerrt"
-    "github.com/notpop/hearth/internal/security/bundle"
-    "github.com/notpop/hearth/internal/security/pki"
+    "github.com/notpop/hearth/pkg/runner"
     "github.com/notpop/hearth/pkg/worker"
 )
 
@@ -115,31 +99,24 @@ func (myHandler) Handle(ctx context.Context, in worker.Input) (worker.Output, er
 }
 
 func main() {
-    b, _ := bundle.ReadFile(os.Args[1])
-    addr := b.Manifest.CoordinatorAddrs[0]
-    host := strings.SplitN(addr, ":", 2)[0]
+    if len(os.Args) != 2 {
+        log.Fatal("usage: my-worker <bundle.hearth>")
+    }
+    ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+    defer cancel()
 
-    tlsCfg, _ := pki.ClientTLSConfig(b.CACertPEM, b.ClientCertPEM, b.ClientKeyPEM, host)
-    client, _ := grpcadapter.Dial(context.Background(), addr, tlsCfg)
-    defer client.Close()
-
-    _, _ = client.RegisterWorker(context.Background(), app.WorkerInfo{
-        ID: b.Manifest.WorkerID, Hostname: hostname(), OS: runtime.GOOS, Arch: runtime.GOARCH,
-        Kinds: []string{"my-task"}, LastSeen: time.Now().UTC(),
-    })
-
-    rt := workerrt.New(workerrt.Options{
-        WorkerID: b.Manifest.WorkerID,
-        Handlers: []worker.Handler{myHandler{}},
-        Client:   client,
-    })
-    _ = rt.Run(context.Background())
+    if err := runner.RunWorker(ctx, os.Args[1], myHandler{}); err != nil {
+        log.Fatal(err)
+    }
 }
-
-func hostname() string { h, _ := os.Hostname(); return h }
 ```
 
-The full, polished version lives at `examples/img2pdf/cmd/img2pdf-worker/main.go`.
+`runner.RunWorker` reads the bundle, dials the coordinator over mTLS, registers
+the worker, and runs the handler loop until the context is cancelled. For more
+control (custom logger, multiple handlers, address override), use `runner.Run`
+with `runner.Options`.
+
+The polished example with a real handler lives at `examples/img2pdf/cmd/img2pdf-worker/main.go`.
 
 ### Handler contract
 

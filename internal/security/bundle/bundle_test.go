@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -60,7 +61,9 @@ func TestWriteFileAndReadFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Stat: %v", err)
 	}
-	if info.Mode().Perm() != 0o600 {
+	// Windows doesn't honour POSIX file modes; Go's os.Stat returns 0o666
+	// regardless of how the file was opened. Only assert on Unix.
+	if runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
 		t.Errorf("perm = %o, want 0600", info.Mode().Perm())
 	}
 

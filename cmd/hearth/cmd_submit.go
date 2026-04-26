@@ -52,11 +52,14 @@ func runSubmit(args []string) error {
 }
 
 // dialFromBundle is the shared "open mTLS gRPC connection" helper used by
-// every CLI client command.
+// every CLI client command. If bundlePath is empty it tries, in order,
+// $HEARTH_BUNDLE, ./.hearth/admin.hearth, and ~/.hearth/admin.hearth.
 func dialFromBundle(bundlePath, addrOverride string) (*grpcadapter.Client, error) {
-	if bundlePath == "" {
-		return nil, fmt.Errorf("--bundle is required")
+	resolved, err := resolveBundlePath(bundlePath)
+	if err != nil {
+		return nil, err
 	}
+	bundlePath = resolved
 	b, err := bundle.ReadFile(bundlePath)
 	if err != nil {
 		return nil, err

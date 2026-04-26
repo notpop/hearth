@@ -134,26 +134,93 @@ func TestRunVersionPrints(t *testing.T) {
 	}
 }
 
-func TestRunCoordinatorRequiresCA(t *testing.T) {
-	t.Setenv("HEARTH_CA_DIR", filepath.Join(t.TempDir(), "no-ca"))
-	if err := runCoordinator([]string{"--listen", ":0", "--data", t.TempDir()}); err == nil {
-		t.Errorf("expected error when CA missing")
+// runCoordinator starts a long-running server and only returns on signal,
+// so it isn't directly testable in-process. The constructor helpers it
+// composes are covered by TestLoadOrInitCA and TestEnsureAdminBundle.
+
+func TestLoadOrInitCAFreshDir(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "ca")
+	ca, err := loadOrInitCA(dir)
+	if err != nil {
+		t.Fatalf("loadOrInitCA: %v", err)
+	}
+	if ca == nil {
+		t.Fatal("ca is nil")
+	}
+	// Second call should load, not re-init.
+	ca2, err := loadOrInitCA(dir)
+	if err != nil {
+		t.Fatalf("loadOrInitCA (2): %v", err)
+	}
+	if ca.Cert.SerialNumber.Cmp(ca2.Cert.SerialNumber) != 0 {
+		t.Errorf("second call re-initialised CA")
+	}
+}
+
+func TestEnsureAdminBundleCreatesAndIsIdempotent(t *testing.T) {
+	dir := t.TempDir()
+	caDir := filepath.Join(dir, "ca")
+	dataDir := filepath.Join(dir, "data")
+	if err := os.MkdirAll(dataDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	ca, err := loadOrInitCA(caDir)
+	if err != nil {
+		t.Fatalf("loadOrInitCA: %v", err)
+	}
+	if err := ensureAdminBundle(ca, dataDir, "0.0.0.0:7843"); err != nil {
+		t.Fatalf("ensureAdminBundle: %v", err)
+	}
+	path := filepath.Join(dataDir, "admin.hearth")
+	info1, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("Stat: %v", err)
+	}
+	// Second call must be a no-op (file mtime unchanged).
+	if err := ensureAdminBundle(ca, dataDir, "0.0.0.0:7843"); err != nil {
+		t.Fatalf("ensureAdminBundle (2): %v", err)
+	}
+	info2, _ := os.Stat(path)
+	if !info1.ModTime().Equal(info2.ModTime()) {
+		t.Errorf("admin bundle was rewritten on second call")
+	}
+}
+
+func TestLoopbackAddrRewritesWildcards(t *testing.T) {
+	cases := map[string]string{
+		"0.0.0.0:7843":   "127.0.0.1:7843",
+		":7843":          "127.0.0.1:7843",
+		"[::]:7843":      "127.0.0.1:7843",
+		"127.0.0.1:7843": "127.0.0.1:7843",
+		"imac.local:80":  "imac.local:80",
+		"not a host":     "not a host", // unparseable returned verbatim
+	}
+	for in, want := range cases {
+		if got := loopbackAddr(in); got != want {
+			t.Errorf("loopbackAddr(%q) = %q, want %q", in, got, want)
+		}
 	}
 }
 
 func TestRunStatusRequiresBundle(t *testing.T) {
+	t.Setenv("HEARTH_BUNDLE", "")
+	t.Setenv("HOME", t.TempDir())
 	if err := runStatus(nil); err == nil {
 		t.Errorf("expected error: --bundle required")
 	}
 }
 
 func TestRunNodesRequiresBundle(t *testing.T) {
+	t.Setenv("HEARTH_BUNDLE", "")
+	t.Setenv("HOME", t.TempDir())
 	if err := runNodes(nil); err == nil {
 		t.Errorf("expected error: --bundle required")
 	}
 }
 
 func TestRunSubmitRequiresBundle(t *testing.T) {
+	t.Setenv("HEARTH_BUNDLE", "")
+	t.Setenv("HOME", t.TempDir())
 	if err := runSubmit([]string{"--kind", "k"}); err == nil {
 		t.Errorf("expected error: --bundle required")
 	}

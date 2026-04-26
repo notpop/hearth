@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"flag"
 	"fmt"
 	"net"
@@ -24,6 +25,7 @@ import (
 	"github.com/notpop/hearth/internal/adapter/store/sqlite"
 	grpcadapter "github.com/notpop/hearth/internal/adapter/transport/grpc"
 	"github.com/notpop/hearth/internal/app/coordinator"
+	"github.com/notpop/hearth/internal/security/bundle"
 	"github.com/notpop/hearth/internal/security/pki"
 	hearthv1 "github.com/notpop/hearth/pkg/proto/hearth/v1"
 )
@@ -39,12 +41,16 @@ func runCoordinator(args []string) error {
 		return err
 	}
 
-	ca, err := pki.LoadCA(*caDir)
+	ca, err := loadOrInitCA(*caDir)
 	if err != nil {
-		return fmt.Errorf("load CA: %w", err)
+		return err
 	}
 
 	if err := os.MkdirAll(*dataDir, 0o755); err != nil {
+		return err
+	}
+
+	if err := ensureAdminBundle(ca, *dataDir, *listen); err != nil {
 		return err
 	}
 	store, err := sqlite.Open(filepath.Join(*dataDir, "hearth.db"))
@@ -213,4 +219,62 @@ func portFromAddr(addr string) int {
 	}
 	n, _ := strconv.Atoi(p)
 	return n
+}
+
+// loadOrInitCA loads the CA at dir, or initialises one if absent. This is
+// the entry point that lets `hearth coordinator` work on a fresh host with
+// no prior CA setup — the user gets a working coordinator with one command.
+func loadOrInitCA(dir string) (*pki.CA, error) {
+	if ca, err := pki.LoadCA(dir); err == nil {
+		return ca, nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		// Existing but corrupt CA: fail loudly rather than silently overwriting.
+		return nil, fmt.Errorf("load CA at %s: %w", dir, err)
+	}
+	fmt.Printf("CA not found at %s — initialising a fresh one\n", dir)
+	return pki.InitCA(dir, "")
+}
+
+// ensureAdminBundle issues a long-lived "admin" client cert on first run
+// and packs it into <data>/admin.hearth so the local CLI (submit/status/...)
+// works without --bundle on the coordinator host.
+func ensureAdminBundle(ca *pki.CA, dataDir, listenAddr string) error {
+	path := filepath.Join(dataDir, "admin.hearth")
+	if _, err := os.Stat(path); err == nil {
+		return nil
+	}
+	issued, err := ca.IssueClient("admin", 0)
+	if err != nil {
+		return fmt.Errorf("issue admin cert: %w", err)
+	}
+	b := bundle.Bundle{
+		Manifest: bundle.Manifest{
+			FormatVersion:    bundle.FormatVersion,
+			HearthVersion:    version,
+			WorkerID:         "admin",
+			CoordinatorAddrs: []string{loopbackAddr(listenAddr)},
+			IssuedAt:         time.Now().UTC(),
+		},
+		CACertPEM:     ca.CertPEM,
+		ClientCertPEM: issued.CertPEM,
+		ClientKeyPEM:  issued.KeyPEM,
+	}
+	if err := bundle.WriteFile(path, b); err != nil {
+		return fmt.Errorf("write admin bundle: %w", err)
+	}
+	fmt.Printf("Wrote admin bundle: %s\n", path)
+	return nil
+}
+
+// loopbackAddr converts the --listen value to a client-friendly address
+// for the admin bundle. Bare 0.0.0.0 / :: are rewritten to 127.0.0.1.
+func loopbackAddr(listenAddr string) string {
+	host, port, err := net.SplitHostPort(listenAddr)
+	if err != nil {
+		return listenAddr
+	}
+	if host == "" || host == "0.0.0.0" || host == "::" {
+		host = "127.0.0.1"
+	}
+	return net.JoinHostPort(host, port)
 }
