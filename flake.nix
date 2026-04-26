@@ -122,9 +122,21 @@
             export GOBIN="$GOPATH/bin"
             export PATH="$GOBIN:$PATH"
             mkdir -p "$GOBIN"
+
+            # Define a shell function for each task so users can just type
+            # `build`, `test`, `vet`, etc. inside this shell — no
+            # `nix run .#<name>` ceremony required. Functions are resolved
+            # before builtins (so our `test` shadows the POSIX `test`
+            # builtin in interactive use; fall back to `command test`
+            # if you need the builtin).
+            ${pkgs.lib.concatStringsSep "\n" (pkgs.lib.mapAttrsToList (name: _: ''
+              ${name}() { nix run ".#${name}" -- "$@"; }
+            '') scripts)}
+
             echo "hearth dev shell — $(go version)"
-            echo "tasks: $(printf '%s ' ${pkgs.lib.concatStringsSep " " (builtins.attrNames scripts)})"
-            echo "  e.g.  nix run .#build    nix run .#test    nix run .#enroll -- <name>"
+            echo "tasks: ${pkgs.lib.concatStringsSep " " (builtins.attrNames scripts)}"
+            echo "  in-shell:  build    test    enroll <name>"
+            echo "  outside:   nix run .#build    nix run .#test    nix run .#enroll -- <name>"
           '';
         };
 

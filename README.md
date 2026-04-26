@@ -120,28 +120,41 @@ A typical home router bridges WiFi and Ethernet at L2, so a Mac on WiFi and a PC
 
 ## Development
 
-Tasks are exposed as Nix flake apps. Run them with `nix run .#<name>`:
+Tasks are exposed as Nix flake apps. Inside `nix develop` (or after `direnv allow`) every task is also defined as a plain shell function — no `nix run .#` ceremony needed for interactive use:
 
 ```sh
-nix run .#build              # ./bin/hearth
-nix run .#test               # full suite (~10 s)
-nix run .#test-race
-nix run .#cover              # per-package coverage
-nix run .#vet
-nix run .#lint               # vet + staticcheck
-nix run .#proto              # regenerate gRPC stubs
+nix develop                  # enter the dev shell (or rely on direnv)
+
+build                        # ./bin/hearth
+test                         # full suite (~10 s)
+test-race
+cover                        # per-package coverage
+vet
+lint                         # vet + staticcheck
+proto                        # regenerate gRPC stubs
+release-build v0.2.1-alpha
+
+# CLI wrappers
+ca-init
+enroll --addr <ip>:7843 my-worker
+coordinator
+```
+
+For non-interactive use (CI, scripts), invoke as flake apps — the `#` is fixed Nix flake syntax for selecting an attribute:
+
+```sh
+nix run .#build
+nix run .#test
 nix run .#release-build -- v0.2.1-alpha
+nix run .#enroll -- --addr <ip>:7843 my-worker
 ```
 
-CLI wrappers (build first, then run):
+Other Nix flakes can consume Hearth as a build input:
 
-```sh
-nix run .#ca-init                                       # hearth ca init
-nix run .#enroll -- --addr <ip>:7843 my-worker          # hearth enroll
-nix run .#coordinator                                   # hearth coordinator
+```nix
+inputs.hearth.url = "github:notpop/hearth";
+# then in your devShell: hearth.packages.${system}.default
 ```
-
-For an interactive shell with all tooling on `$PATH`, `nix develop` (Go 1.26, gopls, golangci-lint, sqlite, protoc, ...).
 
 Other Nix flakes can consume Hearth as a build input:
 
