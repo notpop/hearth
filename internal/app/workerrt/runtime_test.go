@@ -161,7 +161,6 @@ func TestRuntimeRetriesFailedJob(t *testing.T) {
 func TestRuntimePersistsOutputBlob(t *testing.T) {
 	coord, blobStore, client := setup(t)
 
-	type blobHandler struct{}
 	id, _ := coord.Submit(context.Background(), job.Spec{Kind: "blob", MaxAttempts: 1, LeaseTTL: 30 * time.Second})
 
 	rt := workerrt.New(workerrt.Options{

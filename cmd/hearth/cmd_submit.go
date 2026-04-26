@@ -38,7 +38,8 @@ func runSubmit(args []string) error {
 		return fmt.Errorf("--kind is required")
 	}
 
-	ctx := context.Background()
+	ctx, cancel := cliContext()
+	defer cancel()
 	client, err := dialFromBundle(*bundlePath, *addr)
 	if err != nil {
 		return err

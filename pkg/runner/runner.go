@@ -60,12 +60,16 @@ type Options struct {
 	AddrOverride string
 	// Version reported when registering with the coordinator. Optional.
 	Version string
-	// LeaseTTL requested per leased job. Default: 60s.
+	// LeaseTTL requested per leased job. Zero means use the runtime
+	// default of 30s. Match this to your handler's longest expected
+	// run; lower values reclaim faster on worker crashes but require
+	// more frequent heartbeats.
 	LeaseTTL time.Duration
-	// PollTimeout for Lease long-polls. Default: 30s.
+	// PollTimeout for the Lease long-poll cycle. Zero means use the
+	// runtime default of 30s.
 	PollTimeout time.Duration
-	// HeartbeatPeriod is how often the runtime extends a lease. Default:
-	// LeaseTTL / 3 (min 1s).
+	// HeartbeatPeriod is how often the runtime extends a lease. Zero
+	// means LeaseTTL / 3 (with a 1s floor).
 	HeartbeatPeriod time.Duration
 	// Logger. Default: slog.Default().
 	Logger *slog.Logger

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"text/tabwriter"
@@ -27,7 +26,8 @@ func runStatus(args []string) error {
 	}
 	defer client.Close()
 
-	ctx := context.Background()
+	ctx, cancel := cliContext()
+	defer cancel()
 
 	if *id == "" {
 		jobs, err := client.ListJobs(ctx, app.ListFilter{Limit: *limit})

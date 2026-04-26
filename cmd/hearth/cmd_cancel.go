@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 
@@ -25,7 +24,9 @@ func runCancel(args []string) error {
 	}
 	defer client.Close()
 
-	if err := client.CancelJob(context.Background(), job.ID(fs.Arg(0))); err != nil {
+	ctx, cancel := cliContext()
+	defer cancel()
+	if err := client.CancelJob(ctx, job.ID(fs.Arg(0))); err != nil {
 		return err
 	}
 	fmt.Println("cancelled")

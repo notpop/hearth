@@ -12,7 +12,6 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/notpop/hearth/internal/app"
 	"github.com/notpop/hearth/internal/wire"
@@ -44,14 +43,8 @@ func Dial(ctx context.Context, addr string, tlsCfg *tls.Config) (*Client, error)
 	return &Client{conn: conn, rpc: hearthv1.NewCoordinatorClient(conn)}, nil
 }
 
-// DialContextOption is reserved for future tuning (keepalive, message size).
-type DialContextOption struct{}
-
 // Close terminates the underlying connection.
 func (c *Client) Close() error { return c.conn.Close() }
-
-// Conn returns the underlying *grpc.ClientConn (advanced use).
-func (c *Client) Conn() *grpc.ClientConn { return c.conn }
 
 // --- workerrt.CoordinatorClient -----------------------------------------
 
@@ -258,12 +251,9 @@ func (r *streamReader) Read(p []byte) (int, error) {
 }
 
 func (r *streamReader) Close() error {
-	// A unary cancellation is not exposed on server-streaming clients,
-	// but draining is fine — the deferred Close also cancels the call ctx
-	// on the server side via the gRPC connection.
-	_ = r.stream.CloseSend // CloseSend exists only on client streams
-	// Issue a sentinel timestamp use to silence "imported and not used" if
-	// we ever pull it back in; current build does not need it.
-	_ = timestamppb.Now
+	// Server-streaming clients have no half-close to issue from this
+	// side; the call's lifetime is tied to the parent context.
+	// Cancelling the ctx that was passed to GetBlob releases server
+	// resources. Close itself is a no-op.
 	return nil
 }

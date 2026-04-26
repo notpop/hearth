@@ -154,6 +154,7 @@ func TestJobRoundTrip(t *testing.T) {
 		Attempt:   1,
 		Lease:     &job.Lease{WorkerID: "w1", LeasedAt: t0, ExpiresAt: t0.Add(time.Minute)},
 		Result:    nil,
+		Progress:  &job.Progress{Percent: 0.42, Message: "page 21/50", ReportedAt: t0.Add(10 * time.Second)},
 		LastError: "previous boom",
 		NextRunAt: t0,
 		CreatedAt: t0,

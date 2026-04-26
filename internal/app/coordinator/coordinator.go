@@ -201,7 +201,14 @@ func (c *Coordinator) Heartbeat(ctx context.Context, id job.ID, workerID string,
 	if j.State != job.StateLeased || j.Lease == nil {
 		return time.Time{}, false, jobsm.ErrInvalidTransition
 	}
-	exp := c.clock.Now().Add(j.Spec.LeaseTTL)
+	// Defensive default: a job persisted via a path that bypassed
+	// applySpecDefaults (e.g. raw Store.Enqueue from a test fixture)
+	// would otherwise produce expiresAt = now, instantly expiring the lease.
+	ttl := j.Spec.LeaseTTL
+	if ttl <= 0 {
+		ttl = DefaultLeaseTTL
+	}
+	exp := c.clock.Now().Add(ttl)
 	if err := c.store.Heartbeat(ctx, id, workerID, exp, progress); err != nil {
 		return time.Time{}, false, err
 	}

@@ -203,9 +203,11 @@ type Job struct {
 	// Result is set on Succeeded.
 	Result *Result
 
-	// Progress is the latest progress snapshot reported by the running
-	// worker. Nil while no progress has been reported yet, or after
-	// reaching a terminal state without progress reports.
+	// Progress is the latest progress snapshot reported by the worker.
+	// Nil if no progress has ever been reported. Once a worker calls
+	// Input.Report, the snapshot is recorded and persists across
+	// terminal transitions — useful for "the job got to 60% before
+	// failing" post-mortems.
 	Progress *Progress
 
 	// LastError holds the most recent failure message; reset on success.

@@ -33,14 +33,12 @@ type Server struct {
 	registry app.WorkerRegistry
 
 	heartbeatInterval time.Duration
-	watchPoll         time.Duration
 	chunkSize         int
 }
 
 // ServerOptions configures Server behaviour beyond the wired-in dependencies.
 type ServerOptions struct {
 	HeartbeatInterval time.Duration // advertised to workers; default 10s
-	WatchPoll         time.Duration // WatchJob poll interval; default 200ms
 	ChunkSize         int           // GetBlob server-stream chunk size; default 64KiB
 }
 
@@ -48,9 +46,6 @@ type ServerOptions struct {
 func NewServer(coord *coordinator.Coordinator, blob app.BlobStore, registry app.WorkerRegistry, opt ServerOptions) *Server {
 	if opt.HeartbeatInterval == 0 {
 		opt.HeartbeatInterval = 10 * time.Second
-	}
-	if opt.WatchPoll == 0 {
-		opt.WatchPoll = 200 * time.Millisecond
 	}
 	if opt.ChunkSize <= 0 {
 		opt.ChunkSize = 64 * 1024
@@ -60,7 +55,6 @@ func NewServer(coord *coordinator.Coordinator, blob app.BlobStore, registry app.
 		blob:              blob,
 		registry:          registry,
 		heartbeatInterval: opt.HeartbeatInterval,
-		watchPoll:         opt.WatchPoll,
 		chunkSize:         opt.ChunkSize,
 	}
 }

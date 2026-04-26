@@ -32,6 +32,8 @@ func RunSuite(t *testing.T, f Factory) {
 	t.Run("CancelQueued", func(t *testing.T) { testCancelQueued(t, f) })
 	t.Run("CancelLeased", func(t *testing.T) { testCancelLeased(t, f) })
 	t.Run("CancelTerminalIsError", func(t *testing.T) { testCancelTerminalIsError(t, f) })
+	t.Run("HeartbeatRecordsProgress", func(t *testing.T) { testHeartbeatRecordsProgress(t, f) })
+	t.Run("HeartbeatNilProgressPreservesPrevious", func(t *testing.T) { testHeartbeatNilProgressPreservesPrevious(t, f) })
 }
 
 func mustEnqueue(t *testing.T, s app.Store, id job.ID, kind string, now time.Time) job.Job {
@@ -244,6 +246,42 @@ func testCancelTerminalIsError(t *testing.T, f Factory) {
 
 	if err := s.Cancel(context.Background(), "j1", now); err == nil {
 		t.Errorf("Cancel of terminal job should error")
+	}
+}
+
+func testHeartbeatRecordsProgress(t *testing.T, f Factory) {
+	s := f(t)
+	now := time.Now()
+	mustEnqueue(t, s, "j1", "k", now)
+	leased, _, _ := s.LeaseNext(context.Background(), []string{"k"}, "w1", 30*time.Second, now)
+
+	prog := &job.Progress{Percent: 0.5, Message: "halfway", ReportedAt: now}
+	if err := s.Heartbeat(context.Background(), leased.ID, "w1", now.Add(30*time.Second), prog); err != nil {
+		t.Fatalf("Heartbeat: %v", err)
+	}
+	got, _ := s.Get(context.Background(), leased.ID)
+	if got.Progress == nil {
+		t.Fatalf("progress not recorded")
+	}
+	if got.Progress.Percent != 0.5 || got.Progress.Message != "halfway" {
+		t.Errorf("progress = %+v", got.Progress)
+	}
+}
+
+func testHeartbeatNilProgressPreservesPrevious(t *testing.T, f Factory) {
+	s := f(t)
+	now := time.Now()
+	mustEnqueue(t, s, "j1", "k", now)
+	leased, _, _ := s.LeaseNext(context.Background(), []string{"k"}, "w1", 30*time.Second, now)
+
+	first := &job.Progress{Percent: 0.3, Message: "thirty", ReportedAt: now}
+	_ = s.Heartbeat(context.Background(), leased.ID, "w1", now.Add(30*time.Second), first)
+	// Heartbeat without progress should keep the previously-set progress.
+	_ = s.Heartbeat(context.Background(), leased.ID, "w1", now.Add(60*time.Second), nil)
+
+	got, _ := s.Get(context.Background(), leased.ID)
+	if got.Progress == nil || got.Progress.Percent != 0.3 || got.Progress.Message != "thirty" {
+		t.Errorf("progress not preserved on nil-progress heartbeat: %+v", got.Progress)
 	}
 }
 

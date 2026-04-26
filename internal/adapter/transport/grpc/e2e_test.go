@@ -54,7 +54,7 @@ func TestEndToEndOverMTLS(t *testing.T) {
 	coord := coordinator.New(coordinator.Options{Store: store})
 	registry := memregistry.New()
 
-	srvImpl := grpcadapter.NewServer(coord, blob, registry, grpcadapter.ServerOptions{WatchPoll: 10 * time.Millisecond})
+	srvImpl := grpcadapter.NewServer(coord, blob, registry, grpcadapter.ServerOptions{})
 	gs := grpc.NewServer(grpc.Creds(credentials.NewTLS(serverTLS)))
 	hearthv1.RegisterCoordinatorServer(gs, srvImpl)
 

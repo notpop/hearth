@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"strings"
@@ -24,7 +23,9 @@ func runNodes(args []string) error {
 	}
 	defer client.Close()
 
-	nodes, err := client.ListNodes(context.Background())
+	ctx, cancel := cliContext()
+	defer cancel()
+	nodes, err := client.ListNodes(ctx)
 	if err != nil {
 		return err
 	}

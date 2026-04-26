@@ -146,10 +146,14 @@ func scanJob(scanner interface {
 		j.Result = &job.Result{Payload: r.ResultPayload, Blobs: resBlobs}
 	}
 	if r.ProgressPercent.Valid || r.ProgressMessage.Valid {
+		var reportedAt time.Time
+		if r.ProgressReportedAtNs.Valid {
+			reportedAt = nsTime(r.ProgressReportedAtNs.Int64)
+		}
 		j.Progress = &job.Progress{
 			Percent:    r.ProgressPercent.Float64,
 			Message:    nullStr(r.ProgressMessage),
-			ReportedAt: nsTime(r.ProgressReportedAtNs.Int64),
+			ReportedAt: reportedAt,
 		}
 	}
 	return j, nil
