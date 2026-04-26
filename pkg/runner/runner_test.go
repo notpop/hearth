@@ -1,6 +1,7 @@
 package runner_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"net"
@@ -136,9 +137,96 @@ func TestRunRejectsBadBundle(t *testing.T) {
 		Handlers:   []worker.Handler{echoHandler{}},
 	})
 	if err == nil || !errors.Is(err, errors.Unwrap(err)) {
-		// just sanity: should be non-nil
 		if err == nil {
 			t.Errorf("expected error")
 		}
 	}
+}
+
+func TestRunRejectsBothPathAndBytes(t *testing.T) {
+	err := runner.Run(context.Background(), runner.Options{
+		BundlePath:  "/tmp/x.hearth",
+		BundleBytes: []byte("data"),
+		Handlers:    []worker.Handler{echoHandler{}},
+	})
+	if err == nil {
+		t.Errorf("expected error: BundlePath and BundleBytes both set")
+	}
+}
+
+func TestRunRejectsNeither(t *testing.T) {
+	err := runner.Run(context.Background(), runner.Options{
+		Handlers: []worker.Handler{echoHandler{}},
+	})
+	if err == nil {
+		t.Errorf("expected error: neither BundlePath nor BundleBytes set")
+	}
+}
+
+func TestRunFromBundleBytesEndToEnd(t *testing.T) {
+	dir := t.TempDir()
+
+	ca, err := pki.InitCA(filepath.Join(dir, "ca"), "test-ca")
+	if err != nil {
+		t.Fatalf("InitCA: %v", err)
+	}
+	serverCert, _ := ca.IssueServer("localhost", []string{"localhost"}, []string{"127.0.0.1"}, time.Hour)
+	clientCert, _ := ca.IssueClient("test-worker", time.Hour)
+	serverTLS, _ := ca.ServerTLSConfig(serverCert)
+
+	store := memstore.New()
+	blob, _ := blobfs.Open(filepath.Join(dir, "blob"))
+	coord := coordinator.New(coordinator.Options{Store: store})
+	srv := grpcadapter.NewServer(coord, blob, memregistry.New(), grpcadapter.ServerOptions{})
+	gs := grpc.NewServer(grpc.Creds(credentials.NewTLS(serverTLS)))
+	hearthv1.RegisterCoordinatorServer(gs, srv)
+
+	lis, _ := net.Listen("tcp", "127.0.0.1:0")
+	go func() { _ = gs.Serve(lis) }()
+	defer gs.GracefulStop()
+
+	// Build the bundle in memory (no temp file at all — same shape go:embed
+	// users would feed in).
+	var buf bytes.Buffer
+	if err := bundle.Write(&buf, bundle.Bundle{
+		Manifest: bundle.Manifest{
+			FormatVersion:    bundle.FormatVersion,
+			HearthVersion:    "test",
+			WorkerID:         "test-worker",
+			CoordinatorAddrs: []string{lis.Addr().String()},
+			IssuedAt:         time.Now().UTC(),
+		},
+		CACertPEM:     ca.CertPEM,
+		ClientCertPEM: clientCert.CertPEM,
+		ClientKeyPEM:  clientCert.KeyPEM,
+	}); err != nil {
+		t.Fatalf("bundle.Write: %v", err)
+	}
+
+	id, err := coord.Submit(context.Background(), job.Spec{
+		Kind: "echo", Payload: []byte("hi"), MaxAttempts: 1, LeaseTTL: 30 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("Submit: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	done := make(chan error, 1)
+	go func() {
+		done <- runner.RunFromBundleBytes(ctx, buf.Bytes(), echoHandler{})
+	}()
+
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		got, _ := coord.Get(context.Background(), id)
+		if got.State == job.StateSucceeded {
+			cancel()
+			<-done
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatal("job did not succeed via RunFromBundleBytes")
 }

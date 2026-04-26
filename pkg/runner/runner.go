@@ -13,6 +13,7 @@
 package runner
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -50,9 +51,17 @@ func RunWorker(ctx context.Context, bundlePath string, handlers ...Handler) erro
 }
 
 // Options configures a Run with more control than RunWorker exposes.
+//
+// Exactly one of BundlePath or BundleBytes must be set. BundleBytes is the
+// preferred form when the worker binary embeds its bundle at build time
+// (e.g. via go:embed) so the deployed artefact is a single self-contained
+// file with no separate cert/key/addr file to manage.
 type Options struct {
-	// BundlePath is the path to the .hearth enrollment bundle.
+	// BundlePath is the path to the .hearth enrollment bundle on disk.
 	BundlePath string
+	// BundleBytes is the raw .hearth file contents. Use this when the
+	// bundle is embedded into your binary or otherwise held in memory.
+	BundleBytes []byte
 	// Handlers — at least one is required. Each must have a unique Kind().
 	Handlers []Handler
 	// AddrOverride forces a specific coordinator address. Empty means use
@@ -75,16 +84,49 @@ type Options struct {
 	Logger *slog.Logger
 }
 
-// Run is the configurable form of RunWorker.
+// RunFromBundleBytes is a convenience for the embedded-bundle pattern.
+// Equivalent to Run(ctx, Options{BundleBytes: b, Handlers: handlers}).
+//
+// Typical usage:
+//
+//	//go:embed worker.hearth
+//	var bundle []byte
+//
+//	func main() {
+//	    ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+//	    defer cancel()
+//	    log.Fatal(runner.RunFromBundleBytes(ctx, bundle, myHandler{}))
+//	}
+//
+// At least one handler is required.
+func RunFromBundleBytes(ctx context.Context, bundleBytes []byte, handlers ...Handler) error {
+	return Run(ctx, Options{
+		BundleBytes: bundleBytes,
+		Handlers:    handlers,
+	})
+}
+
+// Run is the configurable form of RunWorker / RunFromBundleBytes.
 func Run(ctx context.Context, opt Options) error {
-	if opt.BundlePath == "" {
-		return errors.New("runner: BundlePath is required")
+	if opt.BundlePath == "" && len(opt.BundleBytes) == 0 {
+		return errors.New("runner: one of BundlePath or BundleBytes is required")
+	}
+	if opt.BundlePath != "" && len(opt.BundleBytes) > 0 {
+		return errors.New("runner: BundlePath and BundleBytes are mutually exclusive")
 	}
 	if len(opt.Handlers) == 0 {
 		return errors.New("runner: at least one handler is required")
 	}
 
-	b, err := bundle.ReadFile(opt.BundlePath)
+	var (
+		b   bundle.Bundle
+		err error
+	)
+	if opt.BundlePath != "" {
+		b, err = bundle.ReadFile(opt.BundlePath)
+	} else {
+		b, err = bundle.Read(bytes.NewReader(opt.BundleBytes))
+	}
 	if err != nil {
 		return fmt.Errorf("read bundle: %w", err)
 	}

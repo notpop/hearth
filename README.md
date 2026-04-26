@@ -122,8 +122,9 @@ A typical home router bridges WiFi and Ethernet at L2, so a Mac on WiFi and a PC
 
 ```sh
 nix develop          # Go 1.26 + tooling pinned in flake.nix
-go test ./...        # ~10 s
-go build ./cmd/hearth
+just                 # list tasks
+just test            # run suite (~10 s)
+just build           # ./bin/hearth
 ```
 
 `pkg/` is the public API surface. Everything else lives under `internal/` and may change.
