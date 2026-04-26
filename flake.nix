@@ -150,7 +150,11 @@
           pname = "hearth";
           version = "0.2.1-alpha";
           src = ./.;
-          vendorHash = null;
+          # vendorHash is the SHA-256 of all transitive Go module sources.
+          # When go.sum changes, this needs to be refreshed: set to
+          # `pkgs.lib.fakeHash`, run `nix build .#default`, copy the real
+          # hash from the error message.
+          vendorHash = "sha256-tN+Oypwe3N+l2pw6zFz1/gBVRzWlrTjee9RhDSztSlc=";
           subPackages = [ "cmd/hearth" ];
           env.CGO_ENABLED = "0";
           ldflags = [ "-s" "-w" ];
